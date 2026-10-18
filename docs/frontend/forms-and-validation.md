@@ -296,7 +296,7 @@ Backend tests MUST independently verify all financial validation and consistency
 
 ## 14. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. What exact monetary input syntax will be accepted in the UI?
 2. Will the input accept locale-specific decimal separators?

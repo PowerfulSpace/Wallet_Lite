@@ -356,12 +356,12 @@ The final public response shape is defined in `docs/api/endpoints.md`.
 
 The following items require confirmation or more detailed design:
 
-- Whether the proposed `$0.00` initial wallet balance is accepted.
-- Exact SQL types and timestamp precision for UTC timestamps.
-- Username normalization and case-sensitivity rules.
-- Exact idempotency schema, response serialization, and retention policy.
-- The migration and deployment approach for schema changes.
-- Whether audit metadata beyond financial records is required for the MVP.
+- Whether the proposed `$0.00` initial wallet balance is accepted. (resolved in OQ-001)
+- Exact SQL types and timestamp precision for UTC timestamps. (resolved in CONST-009, CONST-026)
+- Username normalization and case-sensitivity rules. (resolved in OQ-002)
+- Exact idempotency schema, response serialization, and retention policy. (resolved in OQ-010, OQ-018, ADR-005)
+- The migration and deployment approach for schema changes. (resolved in OQ-025, OQ-027)
+- Whether audit metadata beyond financial records is required for the MVP. (unique to this document)
 
 These decisions may refine the physical schema but must preserve the core financial invariants.
 

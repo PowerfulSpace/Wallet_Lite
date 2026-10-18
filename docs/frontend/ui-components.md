@@ -308,7 +308,7 @@ Tests SHOULD verify observable behavior rather than depend unnecessarily on comp
 
 ## 14. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Which component library, if any, will be used?
 2. Which styling approach will be adopted?

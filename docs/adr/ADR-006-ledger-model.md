@@ -1,6 +1,6 @@
 # ADR-006: Wallet Balance and Append-Only Ledger
 
-- **Status:** Proposed (MVP scope; remaining open decisions in §13)
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -257,10 +257,10 @@ Tests involving transactions, constraints, and concurrent operations must run ag
 
 ## 13. Open Decisions
 
-1. Decide which ledger fields are required for audit and troubleshooting.
-2. Define whether reconciliation runs only in tests or also through operational diagnostics.
-3. Determine the required transaction-history response fields.
-4. Establish how future compensating operations will be represented if reversal functionality is introduced.
+1. Decide which ledger fields are required for audit and troubleshooting. (resolved in ADR-006 §3.4)
+2. Define whether reconciliation runs only in tests or also through operational diagnostics. (resolved in OQ-030)
+3. Determine the required transaction-history response fields. (resolved in OQ-018)
+4. Establish how future compensating operations will be represented if reversal functionality is introduced. (unique to this document)
 
 The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
 

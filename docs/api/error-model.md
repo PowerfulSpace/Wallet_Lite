@@ -199,9 +199,9 @@ Expected business conflicts, such as insufficient funds, should be observable th
 ## 10. Open Decisions
 
 1. Choose stable production values for Problem Details `type` URIs. (unique to this document)
-2. Confirm the final application error-code catalogue. (tracked in OQ-020)
-3. Decide whether unknown recipient usernames should return `404` or a generic response. (tracked in OQ-015)
-4. Define the trace identifier source and logging format. (tracked in OQ-029)
-5. Decide whether the API will implement rate limiting in the MVP. (tracked in OQ-023)
+2. Confirm the final application error-code catalogue. (resolved in OQ-020)
+3. Decide whether unknown recipient usernames should return `404` or a generic response. (resolved in OQ-015)
+4. Define the trace identifier source and logging format. (resolved in OQ-029)
+5. Decide whether the API will implement rate limiting in the MVP. (resolved in OQ-023)
 6. Confirm whether the validation response uses ASP.NET Core's default validation extensions or a customized, standardized format. (unique to this document)
-7. Define retryable infrastructure failures and their client-facing behavior. (tracked in OQ-007)
+7. Define retryable infrastructure failures and their client-facing behavior. (resolved in OQ-007)

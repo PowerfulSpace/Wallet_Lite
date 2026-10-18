@@ -244,7 +244,7 @@ Tests MUST NOT rely exclusively on frontend route guards to prove authorization 
 
 ## 15. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Which production identity provider will be used?
 2. Will authentication use cookies, bearer tokens, or another supported mechanism?

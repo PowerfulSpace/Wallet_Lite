@@ -119,7 +119,7 @@ The requirements are sufficiently stable to begin implementation. Unresolved imp
 - Initial automated test projects with at least one placeholder test that compiles and runs.
 - Database connection configuration placeholder (no migrations yet — those belong to Phase 2).
 - Local development instructions in `docs/development/setup.md`, updated to reference the actual project names and build commands.
-- No CI pipeline in Phase 1; `OQ-025` is deferred to a later phase.
+- No CI pipeline in the MVP; see `OQ-025`.
 
 ### Acceptance Criteria
 
@@ -351,6 +351,9 @@ Prepare a reproducible, understandable demonstration of the completed MVP.
 - Development authentication is clearly identified as non-production.
 - Known limitations and unresolved decisions are documented.
 - No out-of-scope feature is required for the core demonstration.
+- `OQ-033` release criteria are met (see `docs/project/open-questions.md OQ-033`).
+- `docs/project/demo.md` exists and covers the documented scenarios.
+- `README.md` and `docs/development/setup.md` are accurate.
 
 ### Exit Condition
 
@@ -401,16 +404,22 @@ Each phase SHOULD be tracked using the following statuses:
 
 A phase MUST NOT be marked Done solely because code has been written. Its acceptance criteria must be checked, including relevant automated tests.
 
+| Phase | Status |
+|---|---|
+| 0 – 7 | Done |
+| 8 | Done |
+| 9 – 11 | Deferred (frontend out of MVP) |
+
 ## 16. Open Decisions
 
-The following items remain open:
+The following items are tracked:
 
-1. Which CI platform will run build, test, and migration checks?
-2. Which performance targets are required for the MVP?
-3. Which production hosting and authentication technologies will be selected?
-4. What are the final acceptance thresholds for reliability and latency?
-5. Which observability and recovery capabilities are mandatory before the first demonstration?
-6. Which unresolved data-model and API decisions must be closed before their implementation phases?
+1. Which CI platform will run build, test, and migration checks? (resolved in OQ-025)
+2. Which performance targets are required for the MVP? (tracked in OQ-024)
+3. Which production hosting and authentication technologies will be selected? (tracked in OQ-021; resolved in OQ-027 for the MVP — no deployment)
+4. What are the final acceptance thresholds for reliability and latency? (resolved in OQ-033; latency tracked in OQ-024)
+5. Which observability and recovery capabilities are mandatory before the first demonstration? (resolved in OQ-029, OQ-030)
+6. Which unresolved data-model and API decisions must be closed before their implementation phases? (resolved in `docs/project/open-questions.md §12` — all P0/P1 closed)
 
 These decisions should be tracked in `docs/project/open-questions.md`.
 

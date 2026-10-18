@@ -177,6 +177,8 @@ The API must document whether responses use a canonical two-decimal format. The 
 
 The API must use a culture-independent format. Locale-specific decimal separators and thousands separators must not be accepted unless explicitly defined by a future contract.
 
+The implementation uses a global `MoneyJsonConverter` (`src/Backend/PS.Wallet/PS.Wallet.API/Json/MoneyJsonConverter.cs`) registered for both MVC and HTTP JSON serialization. See `AGENTS.md §14` and `KI-006`.
+
 ## 10. Ledger Consistency
 
 The ledger must preserve exact monetary values.

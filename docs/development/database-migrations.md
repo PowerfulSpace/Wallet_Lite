@@ -253,10 +253,10 @@ Never resolve a mismatch by manually changing financial data or dropping a datab
 
 ## 16. Open Decisions
 
-1. Confirm the Infrastructure project and migration assembly.
-2. Define the supported SQL Server versions.
-3. Decide whether local and test environments apply migrations automatically.
-4. Choose how Production migration scripts are generated and reviewed.
-5. Define database permissions for application runtime and migration execution.
-6. Establish backup and recovery requirements before deploying to shared environments.
-7. Decide whether migration compatibility checks are required in CI.
+1. Confirm the Infrastructure project and migration assembly. (resolved in `docs/architecture/architecture.md §4.3`)
+2. Define the supported SQL Server versions. (unique to this document)
+3. Decide whether local and test environments apply migrations automatically. (resolved in `setup.md §7`, `setup.md §9`)
+4. Choose how Production migration scripts are generated and reviewed. (resolved in OQ-027 — no MVP deployment)
+5. Define database permissions for application runtime and migration execution. (unique to this document)
+6. Establish backup and recovery requirements before deploying to shared environments. (tracked in OQ-028)
+7. Decide whether migration compatibility checks are required in CI. (resolved in OQ-025)

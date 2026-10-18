@@ -176,7 +176,7 @@ Backend authorization tests remain mandatory and cannot be replaced by routing t
 
 ## 13. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Which routing library or framework-native routing solution will be used?
 2. Will sign-in have a dedicated frontend route?

@@ -307,7 +307,7 @@ Backend integration tests remain responsible for database atomicity, concurrency
 
 ## 15. Technology Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Whether to use framework-native state or a dedicated state-management library.
 2. Whether to use a separate server-state caching library.

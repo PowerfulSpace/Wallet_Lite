@@ -182,7 +182,15 @@ Follow `docs/development/testing.md` and the frontend testing guide when applica
 
 ## 12. Frontend
 
-Frontend is **out of MVP scope**. The `docs/frontend/` documents are drafts for a future phase. Do not implement frontend code, routing, state management, or UI as part of the MVP.
+Frontend is **out of MVP scope** for **business functionality**. The `docs/frontend/` documents are drafts for a future phase.
+
+A **scaffold** exists at `src/Frontend/PS.Wallet/` (Vue 3 + TypeScript + Vite + Pinia + axios + naive-ui) for future development. It contains:
+
+- Layout components (`AppHeader`, `AppFooter`, `MainLayout`).
+- Placeholder views (`HomePage`, `AboutPage`).
+- An empty API client (`src/services/api/client.ts`).
+
+The scaffold does **not** implement any wallet business functionality. Do not extend it with routing to wallet screens, business logic, state management for financial data, or API calls beyond health checks until the project scope is explicitly changed (see `OQ-031`).
 
 If frontend code is implemented, follow the `docs/frontend/` documentation.
 
@@ -190,7 +198,17 @@ The frontend MUST preserve monetary precision, use the documented API contract, 
 
 Client-side validation and route guards MUST NOT be treated as substitutes for backend validation and authorization.
 
-Do not add a frontend framework or UI dependency until the relevant technology decision has been made.
+### Frontend Dependency Policy
+
+The committed scaffold uses Vue 3, TypeScript, Vite, Pinia, axios, and naive-ui. These choices are recorded as the frontend baseline for future phases.
+
+Adding a **new** frontend framework, build tool, state-management library, HTTP client, component library, or other UI dependency requires an explicit decision record:
+
+- Update `docs/project/decisions.md` or create an ADR.
+- Reference the decision in the pull request.
+- Do not introduce a dependency that replaces or duplicates the existing baseline without justification.
+
+This rule applies to `src/Frontend/PS.Wallet/` even though the frontend is out of MVP scope for business functionality.
 
 ## 13. Documentation and Decisions
 

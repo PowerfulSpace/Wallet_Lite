@@ -342,25 +342,25 @@ Reconciliation is performed:
 
 ### 13.5 Implementation Status
 
-No automated reconciliation endpoint exists in the MVP. These queries are run manually by an operator after an incident or as a scheduled operational check (Phase 8+), and the same invariants are covered by SQL Server integration tests (`tests/PS.Wallet.IntegrationTests`). Automated reconciliation tooling, scheduling, and alerting depend on the hosting, RPO/RTO, and observability decisions (`OQ-027`, `OQ-028`, `OQ-029`).
+No automated reconciliation endpoint exists in the MVP. These queries are run manually by an operator after an incident or as a scheduled operational check (post-MVP), and the same invariants are covered by SQL Server integration tests (`tests/PS.Wallet.IntegrationTests`). Automated reconciliation tooling, scheduling, and alerting depend on the hosting, RPO/RTO, and observability decisions (`OQ-027`, `OQ-028`, `OQ-029`).
 
 ## 14. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
-1. What retry limits and delay policy will be used for transient database failures?
-2. Which SQL Server errors will be treated as retryable?
-3. What are the target RPO and RTO?
-4. Which backup and restore strategy will be used in Production?
-5. What is the authorized process for compensating financial transactions?
-6. Under what conditions should financial endpoints be disabled during recovery?
+1. What retry limits and delay policy will be used for transient database failures? (resolved in CONST-017, CONST-018, CONST-019, CONST-020)
+2. Which SQL Server errors will be treated as retryable? (resolved in ADR-004 §8 — deadlock victim 1205)
+3. What are the target RPO and RTO? (tracked in OQ-028)
+4. Which backup and restore strategy will be used in Production? (tracked in OQ-028)
+5. What is the authorized process for compensating financial transactions? (unique to this document)
+6. Under what conditions should financial endpoints be disabled during recovery? (unique to this document)
 
 These decisions should be finalized before production deployment or before implementing the corresponding operational capabilities.
 
 Resolved decisions related to this document:
 
-- Uncertain transaction outcomes in the idempotency implementation (`OQ-011` Decided): `ADR-004 §8`, `ADR-005 §9`, and §4.2.
-- Reconciliation execution and reporting (`OQ-030` Decided): §13.
+- Uncertain transaction outcomes in the idempotency implementation (resolved in OQ-011, KI-004): `ADR-004 §8`, `ADR-005 §9`, and §4.2.
+- Reconciliation execution and reporting (resolved in OQ-030): §13.
 
 ## 15. Related Documents
 

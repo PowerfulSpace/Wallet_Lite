@@ -428,13 +428,13 @@ All endpoints must:
 
 ## 9. Open Decisions
 
-The following items must be resolved before treating this contract as final:
+The following items are tracked. Their labels indicate whether each is resolved, tracked in an open question, or unique to this document:
 
-1. The default and maximum page size for transaction history. (tracked in OQ-013)
-2. Whether a missing recipient returns `404` or a generic `400`/`409` response to reduce user enumeration. (tracked in OQ-015)
+1. The default and maximum page size for transaction history. (resolved in OQ-013)
+2. Whether a missing recipient returns `404` or a generic `400`/`409` response to reduce user enumeration. (resolved in OQ-015)
 3. The exact canonicalization rules for usernames. (resolved in data-model.md §4 Username Normalization Policy; OQ-002)
 4. The exact idempotency request fingerprint and which validation failures are persisted. (resolved in ADR-005 §5 and §10; OQ-017, OQ-009)
-5. Whether successful creation responses use a `Location` header and, if so, its precise value. (tracked in OQ-018)
-6. The exact fields exposed in deposit and transfer responses. (tracked in OQ-018)
-7. The cursor encoding and invalid-cursor error details. (tracked in OQ-014)
+5. Whether successful creation responses use a `Location` header and, if so, its precise value. (resolved in OQ-018)
+6. The exact fields exposed in deposit and transfer responses. (resolved in OQ-018)
+7. The cursor encoding and invalid-cursor error details. (resolved in OQ-014)
 8. Whether to standardize all successful financial responses on `201 Created` or use a different status for some operations. (unique to this document)

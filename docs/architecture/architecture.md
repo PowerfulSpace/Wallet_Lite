@@ -261,11 +261,11 @@ These exclusions are scope decisions for the MVP, not claims that the approaches
 
 ## 14. Open Architectural Decisions
 
-The following decisions require explicit confirmation or separate documentation:
+The following items are tracked. See the labels for status.
 
 - Exact Domain aggregate boundaries and value-object design. (unique to this document)
 - Final persistence interfaces and transaction ownership. (tracked in concurrency.md §14)
-- The concrete SQL Server concurrency strategy. (tracked in OQ-006)
+- The concrete SQL Server concurrency strategy. (resolved in OQ-006)
 - The idempotency record schema, retention policy, and replay representation. (schema and replay tracked in ADR-005 §17 and OQ-010; retention in OQ-010)
 - The authentication mechanism and development-authentication safeguards. (resolved in ADR-007)
 - Whether a mediator or validation framework is justified. (unique to this document)

@@ -253,18 +253,18 @@ Client-facing error messages must not expose internal implementation details.
 
 ## 16. Open Decisions
 
-The following items must be finalized in the relevant contracts:
+The following items are tracked. Their labels indicate status:
 
 - Accepted monetary string grammar. (unique to this document)
 - Identifier format for each resource. (unique to this document)
-- Exact success response bodies and `Location` header behavior. (tracked in OQ-018)
+- Exact success response bodies and `Location` header behavior. (resolved in OQ-018)
 - Idempotency key syntax, length, retention, and replay representation. (partially resolved: syntax/length in CONST-005/006; retention/replay in OQ-010)
-- Default and maximum transaction-history page sizes. (tracked in OQ-013)
-- Cursor encoding and invalid-cursor behavior. (tracked in OQ-014)
-- Exact `403` versus `404` resource-visibility policy. (tracked in OQ-015)
-- Rate-limiting requirements. (tracked in OQ-023)
+- Default and maximum transaction-history page sizes. (resolved in OQ-013)
+- Cursor encoding and invalid-cursor behavior. (resolved in OQ-014)
+- Exact `403` versus `404` resource-visibility policy. (resolved in OQ-015)
+- Rate-limiting requirements. (resolved in OQ-023)
 - Request-size and execution-time limits. (unique to this document)
-- Exact error-code catalogue and validation response shape. (tracked in OQ-020)
+- Exact error-code catalogue and validation response shape. (resolved in OQ-020)
 
 Until those decisions are documented, implementations must not independently invent incompatible conventions.
 

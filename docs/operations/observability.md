@@ -206,7 +206,7 @@ Potential alert conditions include:
 - Failure of readiness checks.
 - Unexpected process termination.
 
-Thresholds, notification channels, and escalation procedures are TBD.
+Thresholds, notification channels, and escalation procedures are not configured. Tracked as `KI-009`.
 
 A business failure such as insufficient funds is not, by itself, evidence of a system outage.
 
@@ -260,18 +260,16 @@ Tests SHOULD confirm that:
 
 ## 12. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
-1. Which structured logging provider will be used?
-2. Will OpenTelemetry be included in the MVP?
-3. Which metrics exporter and monitoring platform will be used?
-4. What are the health-check routes and access restrictions?
-5. Which latency and error-rate thresholds should trigger alerts?
-6. What are the retention periods for logs and traces?
-7. Should successful financial operation events be logged at Information level by default?
-8. What correlation header or response field will the API standardize on?
-
-These decisions should be resolved when the hosting and operational environment are selected.
+1. Which structured logging provider will be used? (resolved in OQ-029)
+2. Will OpenTelemetry be included in the MVP? (resolved in OQ-029)
+3. Which metrics exporter and monitoring platform will be used? (resolved in OQ-029)
+4. What are the health-check routes and access restrictions? (unique to this document)
+5. Which latency and error-rate thresholds should trigger alerts? (tracked in OQ-024)
+6. What are the retention periods for logs and traces? (unique to this document)
+7. Should successful financial operation events be logged at Information level by default? (unique to this document)
+8. What correlation header or response field will the API standardize on? (unique to this document)
 
 ## 13. Related Documents
 

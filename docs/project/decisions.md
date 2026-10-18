@@ -32,50 +32,14 @@ A decision SHOULD be marked `Accepted` only after the relevant trade-offs and ou
 | DEC-002 | Monetary precision | C# `decimal`, SQL Server `decimal(19,2)`, and validated monetary strings in the API | Accepted | `docs/adr/ADR-002-money-and-precision.md` |
 | DEC-003 | Transaction atomicity | Financial changes and the successful idempotency result commit atomically | Accepted | `docs/adr/ADR-003-transaction-atomicity.md` |
 | DEC-004 | Concurrency control | Atomic balance updates protected against concurrent operations | Accepted | `docs/adr/ADR-004-concurrency-control.md` |
-| DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Proposed (MVP scope; remaining in ADR-005 §17) | `docs/adr/ADR-005-idempotency.md` |
-| DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Proposed (MVP scope; remaining in ADR-006 §13) | `docs/adr/ADR-006-ledger-model.md` |
-| DEC-007 | Development authentication | Provide simplified development authentication that is unavailable in Production | Proposed | `docs/adr/ADR-007-development-authentication.md` |
+| DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Accepted | `docs/adr/ADR-005-idempotency.md` |
+| DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Accepted | `docs/adr/ADR-006-ledger-model.md` |
+| DEC-007 | Development authentication | Provide simplified development authentication that is unavailable in Production | Accepted | `docs/adr/ADR-007-development-authentication.md` |
 | DEC-008 | Project constants | Numeric and format constants tracked in a single file | Accepted | `docs/project/constants.md` |
 
-## 4. Summary of Proposed Decisions
+## 4. Decision Summaries
 
-### DEC-005: Idempotency
-
-Deposit and transfer requests must include an `Idempotency-Key`.
-
-The proposed behavior is:
-
-- The same key and same request replay the original successful result.
-- The same key with a different request produces a conflict.
-- Concurrent requests using the same key must not produce duplicate financial effects.
-- The idempotency result must be committed atomically with the successful operation.
-- Failed attempts must not permanently prevent a valid retry unless an explicitly documented rule requires otherwise.
-
-**Open considerations:** Key retention (`OQ-010`), response replay representation, and `Location` header behavior (`OQ-018`). The request fingerprint (`OQ-017`), concurrent key reservation (`OQ-008`), and the key format/length (`CONST-005/006`) are resolved; see `ADR-005 §17` for the remaining items.
-
-**Status note:** MVP scope; remaining open decisions in `ADR-005 §17`.
-
-### DEC-006: Ledger Model
-
-The proposed model stores both the current wallet balance and an append-only ledger.
-
-A deposit creates one positive ledger entry. A transfer creates two entries of equal magnitude and opposite signs.
-
-Normal application operations must not edit or delete historical ledger entries. Corrections should use compensating transactions.
-
-**Open considerations:** Ledger fields for audit, reconciliation execution, and transaction-history response fields (see `ADR-006 §13`). Initial balance (`DR-047`, `OQ-001`), ledger reference model (`OQ-003`, `CONST-027`), and database constraints/indexes (`OQ-005`) are resolved.
-
-**Status note:** MVP scope; remaining open decisions in `ADR-006 §13`.
-
-### DEC-007: Development Authentication
-
-The project proposes simplified development authentication for pre-seeded users Alice and Bob.
-
-Development authentication must not be available in Production. The backend remains responsible for validating the authenticated identity and enforcing resource ownership.
-
-**Open considerations:** The development authentication mechanism, production identity provider, session model, and startup safeguards.
-
-## 4a. Accepted Decisions
+### Accepted Decisions
 
 DEC-001 (architecture style) is accepted and recorded in `docs/adr/ADR-001-architecture-style.md`: a Clean Architecture-inspired modular monolith organized around Domain, Application, Infrastructure, and API responsibilities, with microservices outside the current MVP scope.
 
@@ -84,6 +48,24 @@ DEC-002 (monetary precision) is accepted and recorded in `docs/adr/ADR-002-money
 DEC-003 (transaction atomicity) is accepted and recorded in `docs/adr/ADR-003-transaction-atomicity.md`: a successful deposit or transfer must persist all related financial changes in one database transaction, with the sender debit, recipient credit, transfer record, ledger entries, and successful idempotency result committing atomically.
 
 DEC-004 (concurrency control) is accepted and recorded in `docs/adr/ADR-004-concurrency-control.md`: conditional balance updates (`WHERE Balance >= @Amount`, `WHERE Balance + @Amount <= @Max`) under `READ COMMITTED` isolation (`CONST-016`), deterministic `Wallet.Id` lock ordering (`CONST-021`), and a bounded deadlock-retry policy (`CONST-017`–`CONST-020`).
+
+### DEC-005: Idempotency
+
+Deposit and transfer requests must include an `Idempotency-Key`. The same key and the same request replay the original successful result; the same key with a different request produces a conflict; concurrent requests using the same key must not produce duplicate financial effects; the idempotency result is committed atomically with the successful operation; and failed attempts do not permanently prevent a valid retry unless an explicitly documented rule requires otherwise.
+
+DEC-005 — **Status:** Accepted. All MVP decisions resolved (OQ-010, OQ-018, CONST-005/006). Post-MVP: KI-008 (cleanup).
+
+### DEC-006: Ledger Model
+
+The model stores both the current wallet balance and an append-only ledger. A deposit creates one positive ledger entry; a transfer creates two entries of equal magnitude and opposite signs. Normal application operations must not edit or delete historical ledger entries; corrections use compensating transactions.
+
+DEC-006 — **Status:** Accepted. All MVP decisions resolved (OQ-030 reconciliation, OQ-018 response fields). Post-MVP: audit metadata (unique to this document).
+
+### DEC-007: Development Authentication
+
+Development authentication provides pre-seeded users Alice and Bob in Development and must not be available in Production. The backend remains responsible for validating the authenticated identity and enforcing resource ownership.
+
+DEC-007 — **Status:** Accepted. Mechanism resolved (ADR-007 §4.1). Production auth (OQ-021) deferred.
 
 ## 5. Relationship to Open Questions
 

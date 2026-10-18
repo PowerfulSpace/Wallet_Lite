@@ -1,6 +1,6 @@
 # ADR-007: Development Authentication
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -166,12 +166,14 @@ A production identity provider may be introduced later without changing the prin
 
 ## 11. Open Decisions
 
-1. Select the exact development authentication handler and header format.
-2. Define how authenticated external identities map to application users.
-3. Choose the Production authentication provider and protocol.
-4. Define how missing or invalid Production authentication configuration is detected at startup.
-5. Decide how development seed data is initialized and reset.
-6. Define whether test identities may be used in non-production shared environments.
+**Status note:** Accepted for the MVP. The production authentication provider (OQ-021) and production secret management are tracked as deferred in `open-questions.md §12`. The development authentication mechanism is implemented and verified in Phase 3.
+
+1. Select the exact development authentication handler and header format. (resolved in ADR-007 §4.1)
+2. Define how authenticated external identities map to application users. (resolved in OQ-022)
+3. Choose the Production authentication provider and protocol. (tracked in OQ-021)
+4. Define how missing or invalid Production authentication configuration is detected at startup. (unique to this document)
+5. Decide how development seed data is initialized and reset. (resolved in OQ-032)
+6. Define whether test identities may be used in non-production shared environments. (unique to this document)
 
 ## 12. References
 

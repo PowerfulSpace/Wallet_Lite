@@ -1,6 +1,6 @@
 # ADR-005: Idempotency for Financial Operations
 
-- **Status:** Proposed (MVP scope; remaining open decisions in §17)
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -332,8 +332,8 @@ Not selected as the default because the MVP requires valid retries after retryab
 ## 17. Open Decisions
 
 1. Exact response fields persisted for replay. (resolved in OQ-018)
-2. Retention period and cleanup strategy. (retention resolved in OQ-010 / `CONST-029`; cleanup deferred to Phase 7)
-3. Exact conflict and retryable error codes.
+2. Retention period and cleanup strategy. (retention resolved in OQ-010 / `CONST-029`; cleanup tracked in KI-008)
+3. Exact conflict and retryable error codes. (resolved in OQ-020; see `docs/api/error-model.md §4`)
 4. Whether response replay includes the original `Location` header. (resolved in OQ-018)
 
 The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.

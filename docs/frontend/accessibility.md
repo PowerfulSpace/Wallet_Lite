@@ -255,7 +255,7 @@ A frontend feature SHOULD NOT be considered complete until:
 
 ## 17. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Which frontend framework and component library will be selected?
 2. Which automated accessibility testing tools will be used?

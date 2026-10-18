@@ -335,7 +335,7 @@ Integration tests SHOULD verify compatibility with the actual backend contract.
 
 ## 18. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
 1. Which HTTP client library will be used?
 2. Will request and response types be generated from an API specification?

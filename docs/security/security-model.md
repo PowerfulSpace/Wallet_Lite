@@ -188,9 +188,9 @@ The security model must be reviewed when authentication mechanisms, API endpoint
 ## 11. Open Decisions
 
 1. Select the development authentication mechanism. (resolved in ADR-007)
-2. Define the mapping from authentication claims to application users. (tracked in OQ-022)
+2. Define the mapping from authentication claims to application users. (resolved in OQ-022)
 3. Finalize username normalization and case-sensitivity rules. (resolved in OQ-002; data-model.md §4)
 4. Decide whether unknown recipient usernames should be concealed. (resolved in OQ-015; CONST-022)
 5. Define secret-management requirements for any future production deployment. (tracked in OQ-021)
-6. Determine whether rate limiting is included in the MVP. (tracked in OQ-023)
-7. Define the minimum security logging and audit requirements. (tracked in OQ-029)
+6. Determine whether rate limiting is included in the MVP. (resolved in OQ-023)
+7. Define the minimum security logging and audit requirements. (resolved in OQ-029)

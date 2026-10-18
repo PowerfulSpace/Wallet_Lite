@@ -39,14 +39,12 @@ An item MUST NOT be considered resolved merely because a possible solution has b
 
 **Priority:** P0  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/data-model.md`, `docs/requirements/domain-rules.md`, `docs/adr/ADR-006-ledger-model.md`
 
 Should every new wallet start with a balance of USD 0.00?
 
 The proposed default is zero, with the initial balance represented consistently in the ledger model.
-
-**Decision required:** Confirm the initial balance and the relationship between wallet creation, opening balance, and ledger reconciliation.
 
 **Decision:** New wallets start at `0.00` with no opening ledger entry. Any non-zero starting state must have an explicit ledger entry. See `DR-047`, `ADR-006 §3.1`, `data-model.md §5`.
 
@@ -54,7 +52,7 @@ The proposed default is zero, with the initial balance represented consistently 
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/data-model.md`, `docs/api/endpoints.md`
 
 How should usernames be normalized and compared?
@@ -73,14 +71,12 @@ The decision must define:
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/data-model.md`, `docs/adr/ADR-006-ledger-model.md`
 
 How should ledger entries reference their originating operations?
 
 The implementation must preserve referential integrity and make it possible to distinguish deposit entries from transfer debit and credit entries.
-
-**Decision required:** Select a schema that enforces valid operation references and supports reliable reconciliation.
 
 **Decision:** Two nullable FKs (`DepositId`, `TransferId`) with a `CHECK` constraint enforcing exactly one non-null. Both FKs `ON DELETE RESTRICT`. See `data-model.md §8`, §13.
 
@@ -88,7 +84,7 @@ The implementation must preserve referential integrity and make it possible to d
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/data-model.md`, `docs/requirements/domain-rules.md`
 
 How will the system enforce the expected number and relationship of ledger entries for each successful operation?
@@ -106,14 +102,12 @@ The design must distinguish constraints enforceable directly by SQL Server from 
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/adr/ADR-002-money-and-precision.md`, `docs/architecture/data-model.md`
 
 Which monetary rules will be enforced through database constraints in addition to application validation?
 
 The design must consider positive operation amounts, supported precision, valid balance ranges, and non-negative wallet balances.
-
-**Resolution path:** Values for monetary precision and limits are registered in `docs/project/constants.md` as `CONST-001`–`CONST-004`. This OQ remains open only for the **enforcement mechanism** (database CHECK constraints vs application-only), not for the values themselves.
 
 **Decision:** The database enforces `Balance >= 0 AND Balance <= 1000000.00`, `Amount > 0 AND Amount <= 1000000.00` for deposits/transfers, and `Amount <> 0 AND ABS(Amount) <= 1000000.00` for ledger entries, all as `CHECK` constraints. Precision ("at most 2 fractional digits") and cross-row invariants ("recipient balance limit", "sum == 0") remain application-level. See `data-model.md §13 Numeric Check Constraints`.
 
@@ -123,7 +117,7 @@ The design must consider positive operation amounts, supported precision, valid 
 
 **Priority:** P0  
 **Status:** Decided  
-**Resolve by:** Phase 5 — Transfers  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/concurrency.md`, `docs/adr/ADR-004-concurrency-control.md`
 
 Which SQL Server transaction isolation level will be used for financial write operations?
@@ -138,7 +132,7 @@ The selected isolation level must prevent invalid concurrent financial outcomes 
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 5 — Transfers  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/concurrency.md`, `docs/operations/recovery.md`
 
 Which database errors are eligible for retry, and what retry limits and delays will be applied?
@@ -151,16 +145,12 @@ Retries must be bounded and must preserve transaction atomicity and idempotency.
 
 **Priority:** P0  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/architecture/concurrency.md`
 
 How will the application handle simultaneous requests using the same idempotency key?
 
 The implementation must handle unique-constraint races and concurrent duplicates without creating duplicate financial effects.
-
-**Decision required:** Finalize the database uniqueness constraint, request fingerprinting, and transaction strategy.
-
-**Resolution path:** The bounded-wait and lease constants are registered as `CONST-011` and `CONST-012` in `docs/project/constants.md`. This OQ remains open for the **concurrency coordination mechanism** (unique constraint behavior, wait policy, recovery), not for the numeric parameters.
 
 **Decision:** Unique constraint `(UserId, OperationType, IdempotencyKey)`; bounded wait `CONST-011` (3 s) with polling `CONST-014` (100 ms); `503 IDEMPOTENCY_IN_PROGRESS` on timeout; on-demand lease recovery with `CONST-012` (30 s). See `ADR-005 §9` and `docs/architecture/concurrency.md §8.6`.
 
@@ -168,7 +158,7 @@ The implementation must handle unique-constraint races and concurrent duplicates
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/api/error-model.md`
 
 Which failures, if any, will be persisted as replayable idempotency results?
@@ -177,22 +167,20 @@ The baseline requirement is that failed attempts must not permanently prevent a 
 
 The policy must distinguish validation failures, business-rule failures, transient infrastructure failures, and successful committed operations.
 
-**Resolution path:** Once decided, the policy must state which outcomes are persisted as replayable. See `docs/project/known-issues.md` for any deferred deviation.
-
 **Decision:** `2xx` → `Completed` (replayable); `4xx` business → not persisted as replayable (key released, same key re-validates); `5xx` → remains `InProgress` (recovery via lease). See `ADR-005 §10` and `endpoints.md §5/§6`.
 
 ### OQ-010 — Idempotency Retention
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/architecture/data-model.md`
 
 How long must successful idempotency records remain available?
 
 The retention policy must account for client retry windows and the risk of a previously used key producing a second financial effect after its record is deleted.
 
-**Decision:** Successful (`2xx`) idempotency records are retained for `CONST-029` (`24` hours). `4xx` business rejections are not retained (`CONST-015`; the key is released immediately). `5xx` uncertain outcomes remain `InProgress` until resolved by on-demand lease recovery. Physical cleanup of expired records is deferred to Phase 7.
+**Decision:** Successful (`2xx`) idempotency records are retained for `CONST-029` (`24` hours). `4xx` business rejections are not retained (`CONST-015`; the key is released immediately). `5xx` uncertain outcomes remain `InProgress` until resolved by on-demand lease recovery. Physical cleanup of expired records is tracked as `KI-008` (post-MVP).
 
 **Cross-reference:** Tracked as `ADR-005 §17` item "Retention period and cleanup strategy".
 
@@ -200,7 +188,7 @@ The retention policy must account for client retry windows and the risk of a pre
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 5 — Transfers  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/operations/recovery.md`, `docs/adr/ADR-003-transaction-atomicity.md`, `docs/adr/ADR-005-idempotency.md`
 
 How will the application resolve a database connection failure during commit?
@@ -213,7 +201,7 @@ The implementation must distinguish a confirmed rollback from an uncertain outco
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 5 — Transfers  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/architecture/concurrency.md`, `docs/adr/ADR-004-concurrency-control.md`
 
 Will the application lock or update wallets in a deterministic order, such as by wallet ID?
@@ -228,14 +216,12 @@ The strategy should reduce avoidable deadlocks while preserving atomic transfers
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 6 — Transaction History and API Consistency  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
 What default and maximum page sizes will the transaction history endpoint support?
 
 The final values must balance usability, response size, and database efficiency.
-
-**Resolution path:** Final values will be registered as `CONST-007` and `CONST-008` in `docs/project/constants.md`.
 
 **Decision:** Default `CONST-007` (20); maximum `CONST-008` (100). See `endpoints.md §4`, `api-guidelines.md §11`.
 
@@ -243,14 +229,12 @@ The final values must balance usability, response size, and database efficiency.
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 6 — Transaction History and API Consistency  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
 What format will be used for opaque pagination cursors?
 
 The ordering strategy must provide deterministic pagination using the agreed timestamp and unique identifier fields.
-
-**Resolution path:** Final format will be registered as `CONST-010` in `docs/project/constants.md`.
 
 **Decision:** `base64(JSON { createdAtUtc: ISO8601, id: GUID })` (`CONST-010`). Ordering tuple `(CreatedAtUtc DESC, Id DESC)`. Invalid cursor returns `400 INVALID_CURSOR`. See `endpoints.md §4`, `error-model.md §4`.
 
@@ -258,7 +242,7 @@ The ordering strategy must provide deterministic pagination using the agreed tim
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 5 — Transfers  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/security/threat-model.md`
 
 How should the API respond when the recipient username does not exist?
@@ -271,7 +255,7 @@ The decision must balance a clear client contract against unnecessary disclosure
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 3 — Wallet Query and Identity  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/architecture/data-model.md`
 
 Should the API trim whitespace or normalize recipient usernames, or reject non-canonical input?
@@ -284,14 +268,12 @@ The API and database must apply consistent rules.
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/adr/ADR-005-idempotency.md`
 
 Which normalized request fields will be included in the idempotency fingerprint?
 
 The fingerprint must distinguish materially different logical operations while avoiding differences caused only by irrelevant serialization details.
-
-**Resolution path:** The idempotency key format and length will be registered as `CONST-005` and `CONST-006` in `docs/project/constants.md`.
 
 **Decision:** `SHA-256( operationType "\n" canonicalUsername "\n" canonicalAmount )`, stored as `varbinary(32)`, byte-for-byte comparison. See `ADR-005 §5` and `docs/architecture/data-model.md §9`.
 
@@ -299,7 +281,7 @@ The fingerprint must distinguish materially different logical operations while a
 
 **Priority:** P2  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
 Which response fields and headers will be standardized for successful deposits and transfers?
@@ -314,14 +296,12 @@ The contract should specify operation identifiers, relevant timestamps, resultin
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 6 — Transaction History and API Consistency  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/endpoints.md`, `docs/architecture/data-model.md`
 
 What database timestamp precision and API representation will be used?
 
 The decision must support deterministic ordering and stable cursor pagination when multiple operations share the same timestamp.
-
-**Resolution path:** Final precision will be registered as `CONST-009` in `docs/project/constants.md`.
 
 **Decision:** SQL `datetime2(7)` (`CONST-009`); API ISO 8601 round-trip `O` format (`CONST-026`). See `data-model.md §2`, `api-guidelines.md §12`.
 
@@ -329,7 +309,7 @@ The decision must support deterministic ordering and stable cursor pagination wh
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 4 — Deposits  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/api/error-model.md`, `docs/api/endpoints.md`
 
 Confirm the HTTP status and stable error codes for insufficient funds, balance-limit violations, and idempotency conflicts.
@@ -355,7 +335,7 @@ Development-only authentication must remain unavailable in Production. The MVP m
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 3 — Wallet Query and Identity  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/security/security-model.md`, `docs/architecture/data-model.md`
 
 How will the authenticated principal map to an internal user record?
@@ -367,13 +347,15 @@ The mapping must use a stable identity and must not rely on a client-supplied us
 ### OQ-023 — Rate Limiting
 
 **Priority:** P2  
-**Status:** Open  
-**Resolve by:** Phase 8 — MVP Hardening and Demonstration  
+**Status:** Decided  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/security/threat-model.md`, `docs/requirements/non-functional-requirements.md`
 
 Which rate limits, if any, are required for the MVP?
 
 The decision should consider resource protection, authentication failures, and repeated financial requests without breaking safe idempotent retries.
+
+**Decision:** Rate limiting is **not** part of the MVP. The MVP is a local, backend-first educational project with no deployed public surface. Rate limiting is deferred to a post-MVP phase when the API is exposed to a real network. See `OQ-021` (production authentication) and `OQ-027` (hosting) — both deferred for the same reason.
 
 ## 8. Testing and Quality
 
@@ -393,19 +375,21 @@ Targets must be measurable and tied to a documented test environment.
 ### OQ-025 — CI Platform and Quality Gates
 
 **Priority:** P2  
-**Status:** Open  
-**Resolve by:** Deferred to a later phase (Phase 1 does not include CI setup).  
+**Status:** Decided  
+**Resolve by:** — (Decided; CI is not in the MVP)  
 **Related:** `docs/development/testing.md`, `docs/project/roadmap.md`
 
 Which CI platform will run builds, tests, formatting checks, and migration verification?
 
 The minimum quality gates must be defined even if the specific CI provider remains undecided.
 
+**Decision:** CI is **not** part of the MVP. The MVP is verified locally with `dotnet build`, `dotnet test`, and `dotnet ef migrations has-pending-model-changes`. A CI pipeline (GitHub Actions) is deferred to a post-MVP phase. Quality gates for the MVP are documented in `OQ-033` release criteria.
+
 ### OQ-026 — Integration Test Environment
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 4 (SQL Server-backed tests).  
+**Resolve by:** — (Decided; SQL Server-backed integration tests begin in Phase 4)  
 **Related:** `docs/development/testing.md`, `docs/development/setup.md`
 
 How will SQL Server be provisioned for automated integration tests?
@@ -419,13 +403,15 @@ The solution must support repeatable tests against real SQL Server behavior, inc
 ### OQ-027 — Hosting Platform
 
 **Priority:** P2  
-**Status:** Open  
-**Resolve by:** Phase 8 — MVP Hardening and Demonstration  
+**Status:** Decided  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/operations/configuration.md`, `docs/operations/recovery.md`
 
 Which hosting platform will be used for a deployed environment?
 
 The choice affects secret management, database connectivity, health probes, monitoring, and backup procedures.
+
+**Decision:** The MVP is **not deployed** to a hosting platform. It runs locally against SQL Server (LocalDB for tests, full SQL Server or LocalDB for development). Hosting, production infrastructure, and deployment topology are out of MVP scope. See `OQ-021` (production authentication) and `OQ-028` (backup/RPO/RTO) — both deferred.
 
 ### OQ-028 — Backup, RPO, and RTO
 
@@ -441,26 +427,28 @@ Recovery Point Objective (RPO) and Recovery Time Objective (RTO) must be defined
 ### OQ-029 — Observability Stack
 
 **Priority:** P2  
-**Status:** Open  
-**Resolve by:** Phase 7 — Reliability and Verification  
+**Status:** Decided  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/operations/observability.md`, `docs/operations/configuration.md`
 
 Which logging provider, metrics exporter, tracing implementation, and monitoring platform will be used?
 
 The MVP should retain safe structured logging and correlation even if a full monitoring platform is deferred.
 
+**Decision:** The MVP uses ASP.NET Core's built-in `ILogger` (structured logging) and the standard `GET /health` endpoint. No external observability stack (OpenTelemetry, Prometheus, Grafana, Seq, etc.) is included. `docs/operations/observability.md` documents the intended production observability requirements; implementation is deferred beyond the MVP. Structured logs are emitted by default and include `traceId` via ASP.NET Core.
+
 ### OQ-030 — Reconciliation Procedure
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 7 — Reliability and Verification  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/operations/recovery.md`, `docs/architecture/data-model.md`
 
 How will wallet balances be compared with ledger entries, and how will discrepancies be reported?
 
 The procedure must reflect the approved initialization model and any legitimate adjustment records.
 
-**Decision:** No reconciliation endpoint exists in the MVP. Reconciliation is an operational procedure: operators run the documented SQL checks (`docs/operations/recovery.md §13`, Reconciliation Procedure) manually or via a scheduled job from Phase 8+. The checks compare the stored wallet balance with the ledger under the approved initialization model (`OQ-001`: zero initial balance, no opening ledger entry) and treat an explicitly approved adjustment entry as part of the ledger; discrepancies are reported per `recovery.md §13.3` and never repaired by direct balance or ledger edits. See `ADR-006 §5` (Balance Reconciliation) and `ADR-006 §11`.
+**Decision:** No reconciliation endpoint exists in the MVP. Reconciliation is an operational procedure: operators run the documented SQL checks (`docs/operations/recovery.md §13`, Reconciliation Procedure) manually or via a scheduled job post-MVP. The checks compare the stored wallet balance with the ledger under the approved initialization model (`OQ-001`: zero initial balance, no opening ledger entry) and treat an explicitly approved adjustment entry as part of the ledger; discrepancies are reported per `recovery.md §13.3` and never repaired by direct balance or ledger edits. See `ADR-006 §5` (Balance Reconciliation) and `ADR-006 §11`.
 
 ## 10. Product and Scope
 
@@ -479,7 +467,7 @@ The documentation structure includes a frontend section, but that does not by it
 
 **Priority:** P1  
 **Status:** Decided  
-**Resolve by:** Phase 2 — Domain and Persistence  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/development/setup.md`, `docs/adr/ADR-007-development-authentication.md`
 
 How will the Alice and Bob demonstration users be provisioned?
@@ -491,13 +479,28 @@ The mechanism must be repeatable, safe to rerun, and unavailable as an insecure 
 ### OQ-033 — Initial MVP Release Criteria
 
 **Priority:** P1  
-**Status:** Proposed  
-**Resolve by:** Phase 8 — MVP Hardening and Demonstration  
+**Status:** Decided  
+**Resolve by:** — (Decided; see `**Decision:**`)  
 **Related:** `docs/project/roadmap.md`, `docs/requirements/non-functional-requirements.md`
 
 Which test results and documented behaviors are mandatory before the MVP is considered complete?
 
 The release criteria should include financial invariants, idempotency, concurrency, authorization, repeatable setup, and known limitations.
+
+**Decision:** The MVP is considered complete when all of the following are true:
+
+1. `dotnet build` completes with 0 errors and 0 warnings.
+2. `dotnet test` passes: all unit and integration tests green (currently 105 unit + 53 integration = 158).
+3. `dotnet ef migrations has-pending-model-changes` returns "No changes".
+4. The demo workflow in `docs/project/demo.md` can be executed end-to-end against a clean database with seed data (Alice, Bob).
+5. Financial invariants from `DR-008..DR-046` hold under concurrency (verified by concurrency tests).
+6. Idempotency (`OQ-008`, `OQ-009`, `OQ-010`, `OQ-017`, `OQ-018`) is verified by tests.
+7. All P0 and P1 `OQ` are either `Decided` or `Deferred` with a target phase.
+8. Known issues (`KI-001..KI-007`) are documented with `Revisit by`.
+9. `README.md` and `docs/development/setup.md` accurately describe setup, run, test, and demo.
+10. No out-of-scope feature is required for the demo.
+
+See `docs/project/roadmap.md §12` for the Phase 8 exit condition.
 
 ## 11. Resolution Process
 
@@ -514,18 +517,16 @@ If an item is intentionally postponed, record the reason and the milestone by wh
 
 ## 12. Current Blocking Decisions
 
-All P0 blocking decisions for the MVP are resolved. P1 decisions that are not yet Decided are listed below and must be resolved before the corresponding implementation phase. The following items remain open but are **not blocking** for the start of implementation:
+All P0 blocking decisions for the MVP are resolved. The following items remain non-blocking:
 
 - OQ-021 — Production authentication (Deferred; not part of MVP).
-- OQ-023 — Rate limiting (P2; not part of MVP).
 - OQ-024 — Performance targets (Deferred; see `NFR-012`).
-- OQ-027, OQ-028, OQ-029 — Hosting, RPO/RTO, observability stack (P2/Deferred).
+- OQ-028 — Backup, RPO, and RTO (P2/Deferred).
 - OQ-031 — Frontend scope (Deferred; frontend out of MVP).
-- OQ-033 — MVP release criteria (P1; defined at Phase 8, not before).
 
 Resolved blocking decisions (for reference):
 
-- OQ-001, OQ-002, OQ-003, OQ-004, OQ-005, OQ-006, OQ-007, OQ-008, OQ-009, OQ-010, OQ-011, OQ-012, OQ-013, OQ-014, OQ-015, OQ-016, OQ-017, OQ-018, OQ-019, OQ-020, OQ-022, OQ-026, OQ-030, OQ-032.
+- OQ-001, OQ-002, OQ-003, OQ-004, OQ-005, OQ-006, OQ-007, OQ-008, OQ-009, OQ-010, OQ-011, OQ-012, OQ-013, OQ-014, OQ-015, OQ-016, OQ-017, OQ-018, OQ-019, OQ-020, OQ-022, OQ-023, OQ-025, OQ-026, OQ-027, OQ-029, OQ-030, OQ-032, OQ-033.
 
 ## 13. Related Documents
 

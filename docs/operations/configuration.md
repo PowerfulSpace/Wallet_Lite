@@ -228,15 +228,15 @@ Changes that affect financial correctness MUST include relevant tests and MUST N
 
 ## 12. Open Decisions
 
-The following decisions remain open:
+The following items are tracked. Their labels indicate status:
 
-1. Which hosting platform will be used for Production?
-2. Which production secret-management mechanism will be adopted?
-3. Which SQL Server authentication mode will be used in each environment?
-4. Which authentication provider will replace development-only authentication?
-5. Which operational settings should be configurable in the MVP?
-6. Should the application validate database connectivity at startup, or only validate connection-string configuration and report connectivity through health checks?
-7. Which logging provider and structured logging format will be used?
+1. Which hosting platform will be used for Production? (resolved in OQ-027)
+2. Which production secret-management mechanism will be adopted? (unique to this document)
+3. Which SQL Server authentication mode will be used in each environment? (unique to this document)
+4. Which authentication provider will replace development-only authentication? (tracked in OQ-021)
+5. Which operational settings should be configurable in the MVP? (unique to this document)
+6. Should the application validate database connectivity at startup, or only validate connection-string configuration and report connectivity through health checks? (unique to this document)
+7. Which logging provider and structured logging format will be used? (resolved in OQ-029)
 
 These decisions should be resolved before the relevant deployment or implementation work is finalized.
 

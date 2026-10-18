@@ -152,8 +152,8 @@ This setup is intended for local development only. Container persistence, data v
 From the repository root:
 
 ```bash
-dotnet restore
-dotnet build
+dotnet restore src/Backend/PS.Wallet/PS.Wallet.slnx
+dotnet build src/Backend/PS.Wallet/PS.Wallet.slnx
 ```
 
 The build must complete successfully before running the API or tests.
@@ -213,7 +213,7 @@ Start the API project:
 dotnet run --project src/Backend/PS.Wallet/PS.Wallet.API
 ```
 
-The actual project path and launch profile depend on the final solution structure.
+The development launch profile `http` listens on `http://localhost:5254` (`Properties/launchSettings.json`), and OpenAPI is mapped in Development.
 
 Check the startup output for the listening URL. If Swagger or OpenAPI is enabled for development, use the configured endpoint to inspect the API contract.
 
@@ -225,14 +225,14 @@ Verify that:
 - The expected development authentication mechanism is available only in the intended environment.
 - The documented endpoints are registered.
 
-Do not assume that a particular port, Swagger path, or launch profile exists until it is defined in the repository.
+The development URL and launch profiles are defined in `src/Backend/PS.Wallet/PS.Wallet.API/Properties/launchSettings.json`.
 
 ## 9. Run Automated Tests
 
 Run all tests:
 
 ```bash
-dotnet test
+dotnet test src/Backend/PS.Wallet/PS.Wallet.slnx
 ```
 
 For a specific test project:
@@ -262,8 +262,6 @@ The MVP uses a **local SQL Server installation** (same as development). Docker i
 EF Core's InMemory provider is not a substitute for testing SQL Server transactions, locking, uniqueness constraints, or concurrent updates.
 
 Tests should clean up their data or use isolated database state so results are repeatable.
-
-**Phase 2 note:** Phase 2 introduces only domain unit tests and EF Core mappings. SQL Server-backed integration tests begin in Phase 4 (deposits) and Phase 5 (transfers). The `WALLET_TEST_DB` environment variable and the `Wallet_Test` database are provisioned before Phase 4.
 
 ## 10. Local Development Workflow
 
@@ -327,13 +325,13 @@ Production deployment instructions belong in the operations documentation.
 
 ## 13. Open Decisions
 
-1. Confirm the final solution and project names. (unique to this document)
+1. Confirm the final solution and project names. (resolved in this document: `PS.Wallet.slnx` and the `PS.Wallet.*` projects)
 2. Decide whether Docker Compose will be the standard local SQL Server setup. (unique to this document)
 3. Define the supported SQL Server version and image tag. (unique to this document)
 4. Finalize the development authentication mechanism. (resolved in ADR-007)
 5. Decide how seed data is applied and restricted by environment. (resolved in OQ-032; setup.md §7)
 6. Define the API's local URL, launch profiles, and OpenAPI configuration. (unique to this document)
-7. Define the integration-test database lifecycle. (tracked in OQ-026)
+7. Define the integration-test database lifecycle. (resolved in OQ-026; `Wallet_Test` and `WALLET_TEST_DB`, §9)
 8. Confirm whether a repository-level setup script will automate initialization. (unique to this document)
 
 ## 14. Frontend Scaffold
@@ -368,3 +366,7 @@ curl -H "X-Test-User: alice" http://localhost:5254/api/v1/wallet
 ```
 
 Missing or unknown values return `401 Unauthorized`. The development authentication handler is registered only when `ASPNETCORE_ENVIRONMENT=Development`. In other environments, the application fails to start unless a production authentication handler is configured.
+
+## 16. Demo
+
+A reproducible end-to-end demonstration using the seeded users is documented in `docs/project/demo.md`. It covers deposits, transfers, idempotent retries, idempotency-key reuse conflicts, transaction history, concurrent debit protection, the balance limit, and unauthorized access.

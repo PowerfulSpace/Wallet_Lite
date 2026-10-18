@@ -388,14 +388,14 @@ These signals are diagnostic aids and do not replace correctness constraints or 
 
 ## 14. Open Decisions
 
-The following choices require explicit confirmation:
+The following items are tracked. Their labels indicate status:
 
-- Exact SQL Server isolation level for financial operations. (tracked in OQ-006)
+- Exact SQL Server isolation level for financial operations. (resolved in OQ-006)
 - Whether to use explicit locking hints in selected queries. (unique to this document)
 - Whether conditional updates alone are sufficient for each balance operation. (unique to this document)
 - Exact transaction ownership and EF Core transaction APIs. (unique to this document)
-- Which SQL Server error numbers are eligible for bounded retry. (tracked in OQ-007)
-- Retry count, backoff, and request-duration limits. (tracked in OQ-007)
+- Which SQL Server error numbers are eligible for bounded retry. (resolved in OQ-007)
+- Retry count, backoff, and request-duration limits. (resolved in OQ-007)
 - Idempotency coordination and recovery after a unique-constraint race. (resolved in OQ-008)
 - Whether any optimistic concurrency tokens are useful in addition to atomic updates. (unique to this document)
 
