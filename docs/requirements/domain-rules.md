@@ -245,6 +245,12 @@ The precise reconciliation mechanism and treatment of any initial balance are de
 
 If financial corrections are introduced in a future version, they SHOULD be represented through new compensating operations rather than modifications to historical ledger entries.
 
+### DR-047 — Zero Initial Balance
+
+A newly created wallet MUST start with a balance of `0.00`. No opening ledger entry is required for a zero initial balance.
+
+Any non-zero starting state, whether introduced by a future feature, data migration, or administrative adjustment, MUST be represented by an explicit ledger entry so that the reconciliation invariant `Wallet.Balance = SUM(LedgerEntry.Amount)` continues to hold.
+
 ## 8. Idempotency Rules
 
 ### DR-036 — Idempotency Scope

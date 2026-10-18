@@ -29,13 +29,13 @@ A decision SHOULD be marked `Accepted` only after the relevant trade-offs and ou
 | ID | Decision Area | Current Proposal | Status | Detailed Record |
 |---|---|---|---|---|
 | DEC-001 | Architecture style | Clean Architecture-inspired modular monolith | Proposed | `docs/adr/ADR-001-architecture-style.md` |
-| DEC-002 | Monetary precision | C# `decimal`, SQL Server `decimal(19,2)`, and validated monetary strings in the API | Proposed | `docs/adr/ADR-002-money-and-precision.md` |
+| DEC-002 | Monetary precision | C# `decimal`, SQL Server `decimal(19,2)`, and validated monetary strings in the API | Accepted | `docs/adr/ADR-002-money-and-precision.md` |
 | DEC-003 | Transaction atomicity | Financial changes and the successful idempotency result commit atomically | Proposed | `docs/adr/ADR-003-transaction-atomicity.md` |
 | DEC-004 | Concurrency control | Atomic balance updates protected against concurrent operations | Proposed | `docs/adr/ADR-004-concurrency-control.md` |
-| DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Proposed | `docs/adr/ADR-005-idempotency.md` |
-| DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Proposed | `docs/adr/ADR-006-ledger-model.md` |
+| DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Proposed (MVP scope; remaining in ADR-005 §17) | `docs/adr/ADR-005-idempotency.md` |
+| DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Proposed (MVP scope; remaining in ADR-006 §13) | `docs/adr/ADR-006-ledger-model.md` |
 | DEC-007 | Development authentication | Provide simplified development authentication that is unavailable in Production | Proposed | `docs/adr/ADR-007-development-authentication.md` |
-| DEC-008 | Project constants | Numeric and format constants tracked in a single file | Proposed | `docs/project/constants.md` |
+| DEC-008 | Project constants | Numeric and format constants tracked in a single file | Accepted | `docs/project/constants.md` |
 
 ## 4. Summary of Proposed Decisions
 
@@ -48,20 +48,6 @@ The architecture aims to keep business rules independent of infrastructure conce
 Microservices are outside the current MVP scope.
 
 **Open considerations:** Final project boundaries, dependency enforcement, and the need for additional libraries.
-
-### DEC-002: Monetary Precision
-
-Financial values are proposed to use:
-
-- C# `decimal` for monetary calculations.
-- SQL Server `decimal(19,2)` for persisted monetary values.
-- Decimal strings in JSON API contracts.
-- Explicit validation that rejects amounts with more than two fractional decimal digits.
-- A maximum operation amount and wallet balance of USD 1,000,000.00.
-
-The implementation must not silently round invalid input.
-
-**Open considerations:** Exact database constraints and consistent validation across the API and database layers.
 
 ### DEC-003: Transaction Atomicity
 
@@ -95,6 +81,8 @@ The proposed behavior is:
 
 **Open considerations:** Key retention, request fingerprinting, concurrent key reservation, and recovery after an uncertain commit.
 
+**Status note:** MVP scope; remaining open decisions in `ADR-005 §17`.
+
 ### DEC-006: Ledger Model
 
 The proposed model stores both the current wallet balance and an append-only ledger.
@@ -105,6 +93,8 @@ Normal application operations must not edit or delete historical ledger entries.
 
 **Open considerations:** Initial balance policy, ledger initialization, operation references, and enforcement of ledger cardinality.
 
+**Status note:** MVP scope; remaining open decisions in `ADR-006 §13`.
+
 ### DEC-007: Development Authentication
 
 The project proposes simplified development authentication for pre-seeded users Alice and Bob.
@@ -112,6 +102,10 @@ The project proposes simplified development authentication for pre-seeded users 
 Development authentication must not be available in Production. The backend remains responsible for validating the authenticated identity and enforcing resource ownership.
 
 **Open considerations:** The development authentication mechanism, production identity provider, session model, and startup safeguards.
+
+## 4a. Accepted Decisions
+
+DEC-002 (monetary precision) is accepted and recorded in `docs/adr/ADR-002-money-and-precision.md`: C# `decimal` for monetary calculations, SQL Server `decimal(19,2)` for persisted values, validated monetary strings at the API boundary, and explicit rejection of amounts with more than two fractional decimal digits.
 
 ## 5. Relationship to Open Questions
 

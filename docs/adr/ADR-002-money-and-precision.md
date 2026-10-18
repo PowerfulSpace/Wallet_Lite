@@ -1,6 +1,6 @@
 # ADR-002: Money Representation and Precision
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -105,6 +105,8 @@ builder.Property(x => x.Balance)
 The database schema must not rely on provider defaults for monetary precision.
 
 SQL Server's `decimal(19,2)` supports values with up to 17 integer digits and two fractional digits. The Wallet API's business limits are intentionally much lower than the database type's representational limit.
+
+The choice of precision 19 rather than 18 provides a small safety margin for integer digits beyond the MVP's business limit of USD 1,000,000.00. While the MVP does not require that margin, adopting `decimal(19,2)` now avoids a future schema migration if the operation or balance limits are raised, or if additional precision is required for reporting or reconciliation. A wider type such as `decimal(38,2)` was not selected because it exceeds SQL Server's efficient storage and arithmetic paths for typical OLTP workloads without a concrete requirement.
 
 ## 6. Amount Validation
 
@@ -233,6 +235,10 @@ Rejected because binary floating-point arithmetic is unsuitable for exact moneta
 ### Integer Minor Units
 
 Storing amounts as integer cents can provide exact arithmetic for a single currency. It was not selected for the current design because the project standardizes on C# `decimal` and SQL Server `decimal(19,2)`.
+
+### `decimal(18,2)`
+
+A narrower alternative with 16 integer digits and two fractional digits. It was not selected because it leaves no margin above the MVP's business limit and would require a schema migration if the limit is raised. The functional difference for the current requirements is negligible; the decision is driven by forward compatibility rather than present need.
 
 ### Automatic Rounding
 

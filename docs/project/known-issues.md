@@ -31,7 +31,14 @@ Each entry uses the following fields:
 
 ## 3. Entries
 
-_No known issues recorded yet._
+### KI-001 — `4xx` business rejections are not replayable
+
+- **Status:** Open
+- **Affects:** `ADR-005 §10`, `docs/api/endpoints.md §5/§6`, `docs/api/error-model.md`
+- **Description:** A business rejection (`insufficient_funds`, `balance_limit_exceeded`, `invalid_transfer`) does not persist a replayable result. A retry with the same key and same payload re-executes validation. This deviates from strict "one key = one outcome" semantics.
+- **Risk:** A client that retries after a rejection expecting the same response may instead receive a different response if the underlying state changed. This is intentional: it allows valid retries after funding the wallet.
+- **Mitigation:** The API contract explicitly states this behavior. Clients must not cache rejections. The `Idempotency-Key` is documented as "one logical operation", not "one HTTP response".
+- **Revisit by:** Post-MVP if strict replay semantics become a requirement.
 
 ## 4. Related Documents
 

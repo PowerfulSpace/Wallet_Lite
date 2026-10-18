@@ -97,6 +97,7 @@ Error codes are stable identifiers intended for client applications, automated t
 |---|---:|---|
 | `INTERNAL_ERROR` | 500 | An unexpected error occurred |
 | `SERVICE_UNAVAILABLE` | 503 | The service cannot currently process the request |
+| `IDEMPOTENCY_IN_PROGRESS` | 503 | A matching idempotent request is still being processed after the bounded wait; retry with the same key and request |
 
 Error codes must be documented and tested. Implementations must not expose raw exception messages as application error codes or descriptions.
 

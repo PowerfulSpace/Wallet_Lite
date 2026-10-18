@@ -56,11 +56,20 @@ Additional authentication-related fields are not defined here. Credential storag
 ### Invariants
 
 - Each user has one stable internal identifier.
-- Usernames are unique according to an explicitly chosen comparison and normalization policy.
+- Usernames are unique according to the normalization policy below.
 - A recipient lookup must resolve to at most one user.
 - A client's supplied username must never determine the transfer sender.
 
-The exact rules for case sensitivity, allowed username characters, and normalization remain to be specified in the API and security contracts.
+### Username Normalization Policy
+
+- **Accepted input format:** `^[A-Za-z0-9_]{3,32}$` after trimming leading and trailing whitespace.
+- **Stored form:** lowercased (`alice`, `bob`). The database stores only the canonical lowercase form.
+- **Lookup:** case-insensitive, by comparing the lowercased input against the stored canonical form.
+- **Uniqueness:** enforced by a unique constraint on the stored canonical form.
+- **Rejection:** inputs failing the format check are rejected with `400 VALIDATION_ERROR` before any database lookup.
+- **No Unicode normalization** is applied in the MVP. Only ASCII letters, digits, and underscore are accepted.
+
+The canonical lowercase form is what the request fingerprint uses (see `ADR-005 §5`). See `CONST-013` in `docs/project/constants.md`.
 
 ## 5. Wallet
 
@@ -83,11 +92,12 @@ The `Wallet` entity represents the current monetary state of a user's wallet.
 - A wallet balance must never be negative.
 - A wallet balance must not exceed `$1,000,000.00`.
 - All balance changes must be associated with a valid financial operation and its ledger effects.
-- The initial wallet balance must be defined explicitly before implementation.
+- The initial wallet balance is `0.00` and does not require a ledger entry (`DR-047`).
+- Any non-zero starting state must be accompanied by an explicit ledger entry.
 
 A unique constraint on `Wallet.UserId` enforces at most one wallet per user. The process that creates users or initializes wallets must ensure that every supported user receives a wallet, thereby enforcing the one-wallet-per-user requirement operationally.
 
-**Initial balance decision:** the proposed default is `$0.00` for newly initialized wallets. This should be confirmed as a domain decision before implementation. An initial balance must not be introduced by modifying the balance column without an auditable financial record.
+**Initial balance rule:** newly initialized wallets start at `0.00` with no opening ledger entry. Any non-zero starting balance must be represented by an explicit, auditable ledger entry. The reconciliation invariant (`Balance = SUM(LedgerEntry.Amount)`) holds under this rule.
 
 ## 6. Deposit
 
@@ -208,6 +218,8 @@ The logical uniqueness scope is:
 `(UserId, OperationType, IdempotencyKey)`
 
 A unique database constraint must protect this scope against concurrent requests.
+
+The `RequestFingerprint` column stores `SHA-256` of the canonical request bytes defined in `ADR-005 §5`, as `varbinary(32)`. It is not a string and must not be compared case-insensitively.
 
 ### Invariants
 

@@ -38,7 +38,7 @@ An item MUST NOT be considered resolved merely because a possible solution has b
 ### OQ-001 — Initial Wallet Balance
 
 **Priority:** P0  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/architecture/data-model.md`, `docs/requirements/domain-rules.md`, `docs/adr/ADR-006-ledger-model.md`
 
@@ -48,10 +48,12 @@ The proposed default is zero, with the initial balance represented consistently 
 
 **Decision required:** Confirm the initial balance and the relationship between wallet creation, opening balance, and ledger reconciliation.
 
+**Decision:** New wallets start at `0.00` with no opening ledger entry. Any non-zero starting state must have an explicit ledger entry. See `DR-047`, `ADR-006 §3.1`, `data-model.md §5`.
+
 ### OQ-002 — Username Normalization
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/architecture/data-model.md`, `docs/api/endpoints.md`
 
@@ -64,6 +66,8 @@ The decision must define:
 - Uniqueness rules.
 - Database collation or canonicalization behavior.
 - How recipient usernames are resolved.
+
+**Decision:** `^[A-Za-z0-9_]{3,32}$` after trim; stored and compared in lowercase; no Unicode normalization; uniqueness on canonical lowercase form. See `docs/architecture/data-model.md §4 Username Normalization Policy`, `CONST-013`.
 
 ### OQ-003 — Ledger Reference Model
 
@@ -136,7 +140,7 @@ Retries must be bounded and must preserve transaction atomicity and idempotency.
 ### OQ-008 — Concurrent Idempotency Requests
 
 **Priority:** P0  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/architecture/concurrency.md`
 
@@ -148,10 +152,12 @@ The implementation must handle unique-constraint races and concurrent duplicates
 
 **Resolution path:** The bounded-wait and lease constants are registered as `CONST-011` and `CONST-012` in `docs/project/constants.md`. This OQ remains open for the **concurrency coordination mechanism** (unique constraint behavior, wait policy, recovery), not for the numeric parameters.
 
+**Decision:** Unique constraint `(UserId, OperationType, IdempotencyKey)`; bounded wait `CONST-011` (3 s) with polling `CONST-014` (100 ms); `503 IDEMPOTENCY_IN_PROGRESS` on timeout; on-demand lease recovery with `CONST-012` (30 s). See `ADR-005 §9` and `docs/architecture/concurrency.md §8.6`.
+
 ### OQ-009 — Failed Request Idempotency Policy
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/api/error-model.md`
 
@@ -162,6 +168,8 @@ The baseline requirement is that failed attempts must not permanently prevent a 
 The policy must distinguish validation failures, business-rule failures, transient infrastructure failures, and successful committed operations.
 
 **Resolution path:** Once decided, the policy must state which outcomes are persisted as replayable. See `docs/project/known-issues.md` for any deferred deviation.
+
+**Decision:** `2xx` → `Completed` (replayable); `4xx` business → not persisted as replayable (key released, same key re-validates); `5xx` → remains `InProgress` (recovery via lease). See `ADR-005 §10` and `endpoints.md §5/§6`.
 
 ### OQ-010 — Idempotency Retention
 
@@ -238,7 +246,7 @@ The decision must balance a clear client contract against unnecessary disclosure
 ### OQ-016 — Username Canonicalization in Requests
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 3 — Wallet Query and Identity  
 **Related:** `docs/api/endpoints.md`, `docs/architecture/data-model.md`
 
@@ -246,10 +254,12 @@ Should the API trim whitespace or normalize recipient usernames, or reject non-c
 
 The API and database must apply consistent rules.
 
+**Decision:** The API trims leading/trailing whitespace and lowercases the username before lookup and fingerprinting. Non-canonical input that would canonicalize to a valid username is accepted; input that fails `^[A-Za-z0-9_]{3,32}$` after trimming is rejected with `400 VALIDATION_ERROR`.
+
 ### OQ-017 — Request Fingerprinting
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/adr/ADR-005-idempotency.md`
 
@@ -258,6 +268,8 @@ Which normalized request fields will be included in the idempotency fingerprint?
 The fingerprint must distinguish materially different logical operations while avoiding differences caused only by irrelevant serialization details.
 
 **Resolution path:** The idempotency key format and length will be registered as `CONST-005` and `CONST-006` in `docs/project/constants.md`.
+
+**Decision:** `SHA-256( operationType "\n" canonicalUsername "\n" canonicalAmount )`, stored as `varbinary(32)`, byte-for-byte comparison. See `ADR-005 §5` and `docs/architecture/data-model.md §9`.
 
 ### OQ-018 — Response Fields and Location Headers
 
@@ -460,23 +472,26 @@ If an item is intentionally postponed, record the reason and the milestone by wh
 
 ## 12. Current Blocking Decisions
 
-Before implementing the first financial write operation, the following items should be resolved:
+Before implementing the first financial write operation, the following items were blocking and are now resolved:
 
-- OQ-001 — Initial wallet balance.
-- OQ-008 — Concurrent idempotency request handling.
-- OQ-017 — Request fingerprinting.
-- OQ-009 — Failed request idempotency policy.
-- OQ-005 — Database numeric constraints.
+- OQ-001 — Initial wallet balance — **Decided** (see DR-047).
+- OQ-008 — Concurrent idempotency handling — **Decided** (see ADR-005 §9).
+- OQ-009 — Failed request idempotency policy — **Decided** (see ADR-005 §10).
+- OQ-017 — Request fingerprinting — **Decided** (see ADR-005 §5).
 
-Before implementing transfers, also resolve:
+Before implementing transfers, the following items were blocking and are now resolved:
+
+- OQ-002 — Username normalization — **Decided** (see data-model.md §4).
+- OQ-016 — Username canonicalization — **Decided** (see data-model.md §4).
+
+Still blocking or open for their respective phases:
 
 - OQ-006 — Transaction isolation level.
 - OQ-007 — Deadlock retry policy.
 - OQ-011 — Uncertain commit resolution.
 - OQ-012 — Lock ordering.
 - OQ-015 — Recipient enumeration behavior.
-
-The exact ordering may be adjusted as implementation details become clearer, but no blocking financial invariant may be left implicit.
+- OQ-013, OQ-014, OQ-019 — Transaction history contract details.
 
 ## 13. Related Documents
 

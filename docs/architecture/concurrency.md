@@ -232,6 +232,17 @@ A failed operation must not leave a permanent successful idempotency record for 
 
 The implementation must define which outcomes are persisted and which permit a retry with the same key. Financial changes and successful idempotency results must remain atomic.
 
+### 8.6 In-Progress Coordination
+
+When a matching `InProgress` record exists, the waiting policy is:
+
+- Poll every `CONST-014` (100 ms) up to `CONST-011` (3 s total).
+- If the record completes, replay.
+- If the bounded wait expires, return `503 IDEMPOTENCY_IN_PROGRESS`.
+- If the lease `CONST-012` (30 s) has expired, a single request may claim recovery via a conditional update; all other requests continue to wait.
+
+The unique constraint is the authoritative arbiter. Application-level `SELECT` before `INSERT` is not sufficient and must not be used as the primary mechanism.
+
 ## 9. Lock Ordering and Deadlock Handling
 
 Where a transfer requires locks or updates to both wallets, the application should acquire them in a consistent deterministic order, for example by ascending wallet identifier.

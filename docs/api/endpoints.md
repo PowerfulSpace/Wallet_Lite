@@ -167,7 +167,7 @@ The target wallet is determined from the authenticated user's identity.
 
 | Header | Required | Description |
 |---|---|---|
-| `Idempotency-Key` | Yes | Unique key identifying this logical deposit request |
+| `Idempotency-Key` | Yes | Unique key identifying this logical deposit request. Format: `^[A-Za-z0-9_-]{8,128}$` (CONST-005). |
 | `Content-Type` | Yes | `application/json` |
 
 ### Request Body
@@ -218,7 +218,8 @@ If any required step fails, the financial changes must be rolled back.
 - The same key and equivalent request must replay the original successful response without creating another deposit.
 - Reusing the same key with a different request payload must return `409 Conflict`.
 - Concurrent requests using the same key must not produce duplicate deposits.
-- A failed attempt must not permanently prevent a corrected retry unless the applicable failure policy explicitly requires that behavior.
+- A business rejection (`400`, `409`) does **not** permanently block the key: the same key and same payload may be retried later and will be re-validated against the current state.
+- An unexpected failure (`500`) leaves the attempt in `InProgress`; retry with the same key follows the bounded-wait policy and may recover via on-demand lease recovery.
 
 ### Error Responses
 
@@ -245,7 +246,7 @@ The sender is always derived from the authenticated principal. A sender ID in th
 
 | Header | Required | Description |
 |---|---|---|
-| `Idempotency-Key` | Yes | Unique key identifying this logical transfer request |
+| `Idempotency-Key` | Yes | Unique key identifying this logical transfer request. Format: `^[A-Za-z0-9_-]{8,128}$` (CONST-005). |
 | `Content-Type` | Yes | `application/json` |
 
 ### Request Body
@@ -259,6 +260,7 @@ The sender is always derived from the authenticated principal. A sender ID in th
 
 ### Validation
 
+- `recipientUsername` must match `^[A-Za-z0-9_]{3,32}$` after trimming; it is canonicalized to lowercase before lookup and fingerprinting.
 - `recipientUsername` must identify an existing user.
 - `amount` must be a positive decimal value represented as a JSON string.
 - The amount must have no more than two fractional decimal digits.
@@ -311,6 +313,8 @@ The transfer must either complete fully or have no financial effect.
 - Repeating the same logical request with the same key replays the original successful response.
 - Reusing a key with a different request payload returns `409 Conflict`.
 - A successful retry must not create additional ledger entries or change either wallet balance again.
+- A business rejection (`400`, `409`) does not permanently block the key; the same key and same payload may be retried later and re-validated.
+- An unexpected failure (`500`) leaves the attempt in `InProgress`; retry with the same key follows the bounded-wait policy.
 
 ### Error Responses
 

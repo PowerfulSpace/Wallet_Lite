@@ -1,6 +1,6 @@
 # ADR-005: Idempotency for Financial Operations
 
-- **Status:** Proposed
+- **Status:** Proposed (MVP scope; remaining open decisions in §17)
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -67,7 +67,7 @@ Clients should generate a new key for each new logical operation and reuse that 
 
 A new intentional deposit or transfer must use a different key, even when its request body matches an earlier operation.
 
-The exact key-length limit and accepted format remain open implementation decisions.
+The accepted format is `^[A-Za-z0-9_-]{8,128}$` (`CONST-005`), with a maximum length of 128 characters (`CONST-006`). Keys that do not match are rejected with `400 VALIDATION_ERROR` before any reservation is attempted.
 
 ## 5. Request Fingerprinting
 
@@ -77,7 +77,23 @@ The fingerprint must cover the inputs that determine the financial effect, inclu
 
 - Operation type.
 - Validated monetary amount.
-- Recipient identity for transfers, represented by the server's canonical recipient identity.
+- Recipient identity for transfers, represented by the server's canonical lowercase username per `docs/architecture/data-model.md §4 Username Normalization Policy` (`CONST-013`).
+
+The canonical fingerprint input is constructed as a UTF-8 byte sequence:
+
+```text
+operationType "\n" canonicalUsername "\n" canonicalAmount
+```
+
+where:
+
+- `operationType` is `"deposit"` or `"transfer"`.
+- `canonicalUsername` is the lowercased recipient username for transfers; for deposits, the literal `"-"` (no recipient).
+- `canonicalAmount` is the validated monetary value formatted with exactly two fractional digits using invariant culture, without thousands separators (e.g. `25.50`, `1000000.00`).
+
+The fingerprint is `SHA-256` of that byte sequence, stored as `varbinary(32)` in the database. Comparison is byte-for-byte.
+
+The authenticated user identity is **not** included in the fingerprint bytes; it is part of the uniqueness scope `(UserId, OperationType, IdempotencyKey)` and is enforced by the database constraint. Including it in the hash would be redundant.
 
 The fingerprint must not depend on irrelevant JSON formatting or property order.
 
@@ -155,7 +171,16 @@ The system must ensure that:
 - Unique constraint conflicts are handled deliberately.
 - A concurrent request cannot observe or return a fabricated success.
 
-The exact behavior when a duplicate arrives while the first request is still executing must be defined during implementation. Possible policies include waiting for the first transaction to complete or returning a documented retryable conflict. The policy must be consistent and tested.
+The behavior when a duplicate arrives while the first request is still executing is:
+
+1. The database uniqueness constraint on `(UserId, OperationType, IdempotencyKey)` decides which request reserves the key.
+2. A request that observes an existing `InProgress` record with a matching fingerprint waits for a bounded period (`CONST-011`, 3 seconds) by polling the record every `CONST-014` (100 milliseconds).
+3. If the record transitions to `Completed` within the bounded wait, the waiting request replays the stored result.
+4. If the bounded wait expires, the waiting request returns `503 SERVICE_UNAVAILABLE` with code `IDEMPOTENCY_IN_PROGRESS` and instructs the client to retry with the same key and request.
+5. If the record's lease (`CONST-012`, 30 seconds) has expired and the outcome is still `InProgress`, the waiting request may claim the record with a conditional update and resume the operation under the claimed lease. Only one request wins the claim; all others continue to wait or return `503`.
+6. A request with a different fingerprint returns `409 IDEMPOTENCY_KEY_REUSED` immediately, without waiting.
+
+No background recovery service exists. Recovery is on-demand, triggered by a retry for the same key after the lease has expired.
 
 ## 10. Failed Requests and Retryability
 
@@ -172,7 +197,21 @@ The implementation must distinguish between:
 
 A failed transaction must not leave a successful idempotency record.
 
-Failure results are not required to be permanently replayable under the current MVP policy. Their exact handling and retry behavior must be documented in the API contract.
+The MVP policy distinguishes three outcome classes:
+
+| Outcome class | Persisted as replayable? | Idempotency record final state |
+|---|---|---|
+| `2xx` success | Yes | `Completed` |
+| `4xx` business rejection (validation, insufficient funds, balance limit, self-transfer, idempotency key reuse) | No | Record is deleted after the response is returned, or left to expire per `CONST-015`; the key is released for a fresh attempt |
+| `5xx` unexpected / uncertain commit | No | Remains `InProgress`; resolved by on-demand recovery after the lease expires |
+
+Consequences:
+
+- A client that retries a business-rejected request with the **same** key and **same** payload receives the same rejection only while the rejection is replayable. Under the MVP policy, `4xx` rejections are **not** replayable, so the same key with the same payload **re-executes** validation and may succeed if the underlying condition changed (e.g. insufficient funds resolved by a prior deposit).
+- A client that retries an `5xx`-affected request with the same key while the record is `InProgress` follows the bounded-wait and recovery policy in §9.
+- A client that wants a **different** logical operation must use a **new** key, regardless of prior failures.
+
+The `idempotency_key_reused` conflict applies only to a **different fingerprint** for an **existing** key, not to a retry of the same request after a business rejection.
 
 The application must be particularly careful when a connection or commit failure leaves the operation outcome uncertain. It must use the persisted idempotency state to determine whether the operation already succeeded rather than blindly executing it again.
 
@@ -286,14 +325,12 @@ Not selected as the default because the MVP requires valid retries after retryab
 
 ## 17. Open Decisions
 
-1. Maximum key length and accepted character set.
-2. Canonical request fingerprint format.
-3. Exact response fields persisted for replay.
-4. Behavior when a duplicate arrives during an in-progress request.
-5. Retention period and cleanup strategy.
-6. Whether selected deterministic validation failures are handled before any idempotency record is created.
-7. Exact conflict and retryable error codes.
-8. Whether response replay includes the original `Location` header.
+1. Exact response fields persisted for replay.
+2. Retention period and cleanup strategy.
+3. Exact conflict and retryable error codes.
+4. Whether response replay includes the original `Location` header.
+
+The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
 
 ## 18. References
 

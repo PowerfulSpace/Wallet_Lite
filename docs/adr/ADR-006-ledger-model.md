@@ -1,6 +1,6 @@
 # ADR-006: Wallet Balance and Append-Only Ledger
 
-- **Status:** Proposed
+- **Status:** Proposed (MVP scope; remaining open decisions in §13)
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -49,7 +49,9 @@ Relevant fields include:
 
 Each user has exactly one wallet in the MVP.
 
-The initial balance is proposed to be USD 0.00. This assumption must be confirmed before implementation.
+Every newly created wallet starts at USD 0.00, recorded as `Balance = 0.00`. No opening ledger entry is created for the initial zero balance. This is an **accepted** rule (`DR-047`).
+
+Any non-zero starting state — whether from a future opening-balance feature, a data migration, or an administrative adjustment — must be represented by an explicit, auditable ledger entry. Direct modification of the `Balance` column without a corresponding ledger entry is prohibited.
 
 ### 3.2 Deposit
 
@@ -255,13 +257,14 @@ Tests involving transactions, constraints, and concurrent operations must run ag
 
 ## 13. Open Decisions
 
-1. Confirm that all wallets start at USD 0.00.
-2. Choose how ledger entries reference deposits and transfers while preserving referential integrity.
-3. Decide which ledger fields are required for audit and troubleshooting.
-4. Define whether reconciliation runs only in tests or also through operational diagnostics.
-5. Determine the required transaction-history response fields.
-6. Define the exact database constraints and indexes for ledger queries.
-7. Establish how future compensating operations will be represented if reversal functionality is introduced.
+1. Choose how ledger entries reference deposits and transfers while preserving referential integrity.
+2. Decide which ledger fields are required for audit and troubleshooting.
+3. Define whether reconciliation runs only in tests or also through operational diagnostics.
+4. Determine the required transaction-history response fields.
+5. Define the exact database constraints and indexes for ledger queries.
+6. Establish how future compensating operations will be represented if reversal functionality is introduced.
+
+The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
 
 ## 14. References
 

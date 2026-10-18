@@ -27,14 +27,17 @@ This document does not replace domain rules. Domain rules (`DR-###`) and functio
 | CONST-002 | Maximum operation amount (deposit, transfer) | `1000000.00` | USD | ADR-002 | Proposed |
 | CONST-003 | Monetary precision (scale) | `2` | decimal places | ADR-002 | Proposed |
 | CONST-004 | Monetary SQL type | `decimal(19,2)` | — | ADR-002 | Proposed |
-| CONST-005 | Idempotency key format | `TBD` | regex | ADR-005 | Open (OQ pending) |
-| CONST-006 | Idempotency key maximum length | `TBD` | characters | ADR-005 | Open (OQ pending) |
+| CONST-005 | Idempotency key format | `^[A-Za-z0-9_-]{8,128}$` | regex | ADR-005 | Accepted |
+| CONST-006 | Idempotency key maximum length | `128` | characters | ADR-005 | Accepted |
+| CONST-013 | Username format | `^[A-Za-z0-9_]{3,32}$` | regex | — | Decided |
+| CONST-014 | Idempotency in-progress polling interval | `100` | milliseconds | ADR-005 | Decided |
+| CONST-015 | Idempotency `4xx` record retention | `0` (delete immediately after response) | seconds | ADR-005 | Decided |
 | CONST-007 | Transaction history default page size | `TBD` | items | — | Open (OQ-013) |
 | CONST-008 | Transaction history maximum page size | `TBD` | items | — | Open (OQ-013) |
 | CONST-009 | Timestamp precision (SQL) | `TBD` | — | — | Open (OQ-019) |
 | CONST-010 | Cursor format | `TBD` | — | — | Open (OQ-014) |
-| CONST-011 | Bounded wait for in-progress idempotent operation | `TBD` | seconds | ADR-005 | Open (OQ-008) |
-| CONST-012 | Idempotency lease duration | `TBD` | seconds | ADR-005 | Open (OQ-008) |
+| CONST-011 | Bounded wait for in-progress idempotent operation | `3` | seconds | ADR-005 | Decided |
+| CONST-012 | Idempotency lease duration | `30` | seconds | ADR-005 | Decided |
 
 ## 4. How to Add or Change a Constant
 

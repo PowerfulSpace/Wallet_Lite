@@ -143,7 +143,7 @@ The API follows these rules:
 4. The financial operation and its successful idempotency result must be committed atomically.
 5. Failure handling must allow a valid retry according to the documented idempotency policy.
 
-The exact header validation, key-length limit, request fingerprint, replay representation, and retention policy must be defined in the endpoint and idempotency documentation.
+The header is required. The accepted format is `^[A-Za-z0-9_-]{8,128}$` (`CONST-005`). See `ADR-005 §4` for validation rules and `ADR-005 §5` for the request fingerprint.
 
 Idempotency is not a replacement for database transaction guarantees or concurrency control.
 
