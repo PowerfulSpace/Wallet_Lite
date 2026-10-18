@@ -8,6 +8,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string | undefined,
     public readonly problem: ProblemDetails | undefined,
+    public readonly reason?: string,
   ) {
     super(`API error ${status}${code ? ` (${code})` : ''}`)
     this.name = 'ApiError'

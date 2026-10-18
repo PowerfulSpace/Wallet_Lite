@@ -41,7 +41,7 @@ const router = useRouter()
 const route = useRoute()
 const devUser = useDevUserStore()
 
-const active = computed(() => route.name as string)
+const active = computed(() => (typeof route.name === 'string' ? route.name : ''))
 
 const userOptions: SelectOption[] = [
   { label: 'alice', value: 'alice' },
