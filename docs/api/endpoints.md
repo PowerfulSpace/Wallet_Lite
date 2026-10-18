@@ -84,7 +84,7 @@ Query parameters:
 | Parameter | Required | Description |
 |---|---|---|
 | `cursor` | No | Opaque cursor returned by a previous response |
-| `limit` | No | Maximum number of items; default and maximum values are TBD |
+| `limit` | No | Maximum number of items; default `CONST-007` (20), maximum `CONST-008` (100) |
 
 Filtering by transaction type or date range is outside the MVP scope.
 
@@ -138,10 +138,11 @@ All IDs, amounts, timestamps, and cursor values are illustrative.
 
 - Entries are ordered newest first.
 - Pagination uses a stable composite ordering based on `(CreatedAtUtc, Id)`.
-- The cursor is opaque to clients.
-- The cursor must be validated before use.
-- The implementation must avoid duplicates and omissions caused by entries sharing the same timestamp.
-- The exact cursor encoding and the behavior when new entries are created between page requests remain implementation details to be finalized.
+- The cursor is opaque to clients and must be treated as an unmodified string.
+- Cursor encoding: `base64(JSON { createdAtUtc: ISO8601, id: GUID })` (`CONST-010`). The JSON uses invariant culture and UTC.
+- The cursor must be validated before use. A malformed or undecodable cursor returns `400 VALIDATION_ERROR` with code `INVALID_CURSOR`.
+- The ordering tuple is `(CreatedAtUtc DESC, Id DESC)`. The cursor encodes the last item of the previous page, and the query uses `WHERE (CreatedAtUtc, Id) < (cursor.CreatedAtUtc, cursor.Id)`.
+- New entries created between page requests appear as additional items in earlier pages (newest-first order); they do not shift already-returned items.
 
 ### Error Responses
 
@@ -265,7 +266,7 @@ The sender is always derived from the authenticated principal. A sender ID in th
 - `amount` must be a positive decimal value represented as a JSON string.
 - The amount must have no more than two fractional decimal digits.
 - The amount must not exceed `1,000,000.00`.
-- The sender and recipient must be different users.
+- The sender and recipient must be different users. Violation returns `409 SELF_TRANSFER`.
 - The sender must have sufficient funds.
 - The recipient's resulting balance must not exceed `1,000,000.00`.
 - The server must not silently round amounts with excessive precision.
@@ -320,7 +321,7 @@ The transfer must either complete fully or have no financial effect.
 
 - `400 Bad Request` — malformed JSON or invalid input.
 - `401 Unauthorized` — authentication is missing or invalid.
-- `404 Not Found` — recipient does not exist.
+- `404 Not Found` — recipient does not exist (`RESOURCE_NOT_FOUND`). The response is indistinguishable from a nonexistent transfer, to avoid user enumeration (`CONST-022`).
 - `409 Conflict` — insufficient funds, self-transfer, recipient balance limit exceeded, or idempotency key reused with a different payload.
 - `500 Internal Server Error` — unexpected server failure.
 
@@ -383,11 +384,11 @@ All endpoints must:
 
 The following items must be resolved before treating this contract as final:
 
-1. The default and maximum page size for transaction history.
-2. Whether a missing recipient returns `404` or a generic `400`/`409` response to reduce user enumeration.
-3. The exact canonicalization rules for usernames.
-4. The exact idempotency request fingerprint and which validation failures are persisted.
-5. Whether successful creation responses use a `Location` header and, if so, its precise value.
-6. The exact fields exposed in deposit and transfer responses.
-7. The cursor encoding and invalid-cursor error details.
-8. Whether to standardize all successful financial responses on `201 Created` or use a different status for some operations.
+1. The default and maximum page size for transaction history. (tracked in OQ-013)
+2. Whether a missing recipient returns `404` or a generic `400`/`409` response to reduce user enumeration. (tracked in OQ-015)
+3. The exact canonicalization rules for usernames. (resolved in data-model.md §4 Username Normalization Policy; OQ-002)
+4. The exact idempotency request fingerprint and which validation failures are persisted. (resolved in ADR-005 §5 and §10; OQ-017, OQ-009)
+5. Whether successful creation responses use a `Location` header and, if so, its precise value. (tracked in OQ-018)
+6. The exact fields exposed in deposit and transfer responses. (tracked in OQ-018)
+7. The cursor encoding and invalid-cursor error details. (tracked in OQ-014)
+8. Whether to standardize all successful financial responses on `201 Created` or use a different status for some operations. (unique to this document)

@@ -215,7 +215,18 @@ Both forms must represent the same value. When a document needs a numeric consta
 
 Do not introduce a third format (e.g. `1 000 000.00`, `1_000_000.00`).
 
-## 15. Development Workflow
+## 15. Phase 1 Build Infrastructure
+
+Phase 1 creates the build and solution infrastructure defined in `docs/project/roadmap.md §5`:
+
+- `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `.editorconfig` at the repository root.
+- `src/Backend/PS.Wallet/PS.Wallet.slnx` (`.slnx` format).
+- Backend projects `PS.Wallet.Domain`, `PS.Wallet.Application`, `PS.Wallet.Infrastructure`, `PS.Wallet.API` under `src/Backend/PS.Wallet/`.
+- Test projects `PS.Wallet.UnitTests`, `PS.Wallet.IntegrationTests` under `tests/`.
+
+Do not create `.sln` files, do not use a different project-name prefix, and do not add packages outside the Phase 1 package set. Future packages are added by their respective phases and recorded in `Directory.Packages.props`.
+
+## 16. Development Workflow
 
 Before making changes:
 
@@ -235,7 +246,7 @@ After making changes:
 
 Never claim that tests, migrations, builds, or other commands succeeded unless they were actually executed and their results were observed.
 
-## 16. Scope Control
+## 17. Scope Control
 
 The MVP uses virtual USD balances only.
 
@@ -243,7 +254,7 @@ Do not introduce real payment processing, bank integration, multi-currency suppo
 
 Prefer the simplest implementation that satisfies documented requirements and preserves financial invariants.
 
-## 17. Handling Uncertainty
+## 18. Handling Uncertainty
 
 When a required decision is missing:
 

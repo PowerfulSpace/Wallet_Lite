@@ -116,7 +116,7 @@ The design must consider positive operation amounts, supported precision, valid 
 ### OQ-006 — Transaction Isolation Level
 
 **Priority:** P0  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 5 — Transfers  
 **Related:** `docs/architecture/concurrency.md`, `docs/adr/ADR-004-concurrency-control.md`
 
@@ -126,16 +126,20 @@ The decision must be based on the chosen conditional-update and locking strategy
 
 The selected isolation level must prevent invalid concurrent financial outcomes without relying on unsafe read-then-update logic.
 
+**Decision:** `READ COMMITTED` + explicit conditional updates + deterministic lock ordering. Not `SERIALIZABLE`, not `SNAPSHOT`. See `ADR-004 §6`, `CONST-016`.
+
 ### OQ-007 — Deadlock Retry Policy
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 5 — Transfers  
 **Related:** `docs/architecture/concurrency.md`, `docs/operations/recovery.md`
 
 Which database errors are eligible for retry, and what retry limits and delays will be applied?
 
 Retries must be bounded and must preserve transaction atomicity and idempotency.
+
+**Decision:** Retry only SQL error `1205` (deadlock victim); max `CONST-017` (3) attempts; base `CONST-018` (100 ms); multiplier `CONST-019` (×2); jitter `CONST-020` (±20%). Other transient errors surface as `500` and rely on client idempotent retry. See `ADR-004 §8`.
 
 ### OQ-008 — Concurrent Idempotency Requests
 
@@ -182,10 +186,12 @@ How long must successful idempotency records remain available?
 
 The retention policy must account for client retry windows and the risk of a previously used key producing a second financial effect after its record is deleted.
 
+**Cross-reference:** Tracked as `ADR-005 §17` item "Retention period and cleanup strategy".
+
 ### OQ-011 — Uncertain Commit Resolution
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 5 — Transfers  
 **Related:** `docs/operations/recovery.md`, `docs/adr/ADR-003-transaction-atomicity.md`, `docs/adr/ADR-005-idempotency.md`
 
@@ -193,10 +199,12 @@ How will the application resolve a database connection failure during commit?
 
 The implementation must distinguish a confirmed rollback from an uncertain outcome and avoid blindly repeating the operation.
 
+**Decision:** An uncertain commit outcome returns `503 IDEMPOTENCY_IN_PROGRESS` and leaves the idempotency record `InProgress`. The client retries with the same key; the bounded wait and on-demand recovery in `ADR-005 §9` resolve the outcome. The application does not blindly retry financial writes. See `ADR-004 §8`, `recovery.md §4.2`.
+
 ### OQ-012 — Lock Ordering
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 5 — Transfers  
 **Related:** `docs/architecture/concurrency.md`, `docs/adr/ADR-004-concurrency-control.md`
 
@@ -204,12 +212,14 @@ Will the application lock or update wallets in a deterministic order, such as by
 
 The strategy should reduce avoidable deadlocks while preserving atomic transfers.
 
+**Decision:** Wallet rows are updated in ascending `Wallet.Id` (Guid ordinal) order (`CONST-021`), independent of sender/recipient role. See `ADR-004 §5`.
+
 ## 6. API Contract
 
 ### OQ-013 — Transaction History Page Size
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 6 — Transaction History and API Consistency  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
@@ -219,10 +229,12 @@ The final values must balance usability, response size, and database efficiency.
 
 **Resolution path:** Final values will be registered as `CONST-007` and `CONST-008` in `docs/project/constants.md`.
 
+**Decision:** Default `CONST-007` (20); maximum `CONST-008` (100). See `endpoints.md §4`, `api-guidelines.md §11`.
+
 ### OQ-014 — Cursor Format
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 6 — Transaction History and API Consistency  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
@@ -232,16 +244,20 @@ The ordering strategy must provide deterministic pagination using the agreed tim
 
 **Resolution path:** Final format will be registered as `CONST-010` in `docs/project/constants.md`.
 
+**Decision:** `base64(JSON { createdAtUtc: ISO8601, id: GUID })` (`CONST-010`). Ordering tuple `(CreatedAtUtc DESC, Id DESC)`. Invalid cursor returns `400 INVALID_CURSOR`. See `endpoints.md §4`, `error-model.md §4`.
+
 ### OQ-015 — Recipient Enumeration Behavior
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 5 — Transfers  
 **Related:** `docs/api/endpoints.md`, `docs/security/threat-model.md`
 
 How should the API respond when the recipient username does not exist?
 
 The decision must balance a clear client contract against unnecessary disclosure of registered usernames.
+
+**Decision:** Unknown recipient returns `404 RESOURCE_NOT_FOUND`, indistinguishable from inaccessible transfer (`CONST-022`). See `endpoints.md §6`, `error-model.md §6`.
 
 ### OQ-016 — Username Canonicalization in Requests
 
@@ -282,10 +298,12 @@ Which response fields and headers will be standardized for successful deposits a
 
 The contract should specify operation identifiers, relevant timestamps, resulting balance information if included, and whether a `Location` header is returned.
 
+**Cross-reference:** Tracked as `ADR-005 §17` items "Exact response fields persisted for replay" and "Whether response replay includes the original `Location` header".
+
 ### OQ-019 — Timestamp Precision and Ordering
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 6 — Transaction History and API Consistency  
 **Related:** `docs/api/endpoints.md`, `docs/architecture/data-model.md`
 
@@ -295,16 +313,20 @@ The decision must support deterministic ordering and stable cursor pagination wh
 
 **Resolution path:** Final precision will be registered as `CONST-009` in `docs/project/constants.md`.
 
+**Decision:** SQL `datetime2(7)` (`CONST-009`); API ISO 8601 round-trip `O` format (`CONST-026`). See `data-model.md §2`, `api-guidelines.md §12`.
+
 ### OQ-020 — HTTP Status for Business Conflicts
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/api/error-model.md`, `docs/api/endpoints.md`
 
 Confirm the HTTP status and stable error codes for insufficient funds, balance-limit violations, and idempotency conflicts.
 
 The proposed baseline uses HTTP 409 for business conflicts, with distinct application error codes.
+
+**Decision:** The error-code catalogue in `error-model.md §4` is final for the MVP. `SELF_TRANSFER` (409) is added as a distinct code from `INVALID_TRANSFER` (409) for client clarity. See `error-model.md §4`, `endpoints.md §6`.
 
 ## 7. Security and Authentication
 
@@ -345,20 +367,22 @@ The decision should consider resource protection, authentication failures, and r
 
 ### OQ-024 — Performance Targets
 
-**Priority:** P1  
-**Status:** Open  
-**Resolve by:** Phase 7 — Reliability and Verification  
+**Priority:** P3 — Deferred  
+**Status:** Deferred  
+**Resolve by:** Post-MVP, before performance acceptance testing  
 **Related:** `docs/requirements/non-functional-requirements.md`, `docs/project/roadmap.md`
 
 What response-time, throughput, and concurrency targets should be used?
 
 Targets must be measurable and tied to a documented test environment.
 
+**Decision (MVP):** Performance targets are deferred beyond the MVP. The MVP does not claim a numeric performance level. Correctness under concurrency is verified by `NFR-003` and `NFR-024`, independently of throughput or latency targets. See `NFR-012`.
+
 ### OQ-025 — CI Platform and Quality Gates
 
 **Priority:** P2  
 **Status:** Open  
-**Resolve by:** Phase 1 — Solution Foundation  
+**Resolve by:** Deferred to a later phase (Phase 1 does not include CI setup).  
 **Related:** `docs/development/testing.md`, `docs/project/roadmap.md`
 
 Which CI platform will run builds, tests, formatting checks, and migration verification?
@@ -369,12 +393,14 @@ The minimum quality gates must be defined even if the specific CI provider remai
 
 **Priority:** P1  
 **Status:** Proposed  
-**Resolve by:** Phase 1 — Solution Foundation  
+**Resolve by:** Deferred to implementation; Phase 1 creates the test project scaffolding but does not provision a SQL Server test environment.  
 **Related:** `docs/development/testing.md`, `docs/development/setup.md`
 
 How will SQL Server be provisioned for automated integration tests?
 
 The solution must support repeatable tests against real SQL Server behavior, including transactions, constraints, and concurrency.
+
+**Phase 1 note:** The `Wallet.IntegrationTests` project is created in Phase 1 but contains no SQL Server-dependent tests. Test environment provisioning is resolved before Phase 2.
 
 ## 9. Operations and Recovery
 
@@ -438,13 +464,15 @@ The documentation structure includes a frontend section, but that does not by it
 ### OQ-032 — User Creation and Seed Data
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/development/setup.md`, `docs/adr/ADR-007-development-authentication.md`
 
 How will the Alice and Bob demonstration users be provisioned?
 
 The mechanism must be repeatable, safe to rerun, and unavailable as an insecure production account-creation mechanism.
+
+**Decision:** Alice (`alice@example.com`, `CONST-024`) and Bob (`bob@example.com`, `CONST-025`), wallets at `0.00` (`DR-047`), idempotent seed. Development only; not in Production. See `setup.md §7`.
 
 ### OQ-033 — Initial MVP Release Criteria
 
@@ -472,26 +500,24 @@ If an item is intentionally postponed, record the reason and the milestone by wh
 
 ## 12. Current Blocking Decisions
 
-Before implementing the first financial write operation, the following items were blocking and are now resolved:
+All P0 blocking decisions for the MVP are resolved. P1 decisions that are not yet Decided are listed below and must be resolved before the corresponding implementation phase. The following items remain open but are **not blocking** for the start of implementation:
 
-- OQ-001 — Initial wallet balance — **Decided** (see DR-047).
-- OQ-008 — Concurrent idempotency handling — **Decided** (see ADR-005 §9).
-- OQ-009 — Failed request idempotency policy — **Decided** (see ADR-005 §10).
-- OQ-017 — Request fingerprinting — **Decided** (see ADR-005 §5).
+- OQ-003 — Ledger reference model (P1; Phase 2).
+- OQ-004 — Ledger cardinality enforcement (P1; Phase 2).
+- OQ-005 — Database numeric constraints enforcement mechanism (P1; Phase 2).
+- OQ-022 — User identity mapping (P1; Phase 3).
+- OQ-010 — Idempotency retention (needed before Phase 4 hardening, not before first deposit).
+- OQ-018 — Response fields and `Location` header behavior (needed before Phase 4, but the contract defaults are workable).
+- OQ-021 — Production authentication (Deferred; not part of MVP).
+- OQ-023 — Rate limiting (P2; not part of MVP).
+- OQ-024 — Performance targets (Deferred; see `NFR-012`).
+- OQ-027, OQ-028, OQ-029, OQ-030 — Hosting, RPO/RTO, observability stack, reconciliation procedure (P2/Deferred).
+- OQ-031 — Frontend scope (Deferred; frontend out of MVP).
+- OQ-033 — MVP release criteria (P1; defined at Phase 8, not before).
 
-Before implementing transfers, the following items were blocking and are now resolved:
+Resolved blocking decisions (for reference):
 
-- OQ-002 — Username normalization — **Decided** (see data-model.md §4).
-- OQ-016 — Username canonicalization — **Decided** (see data-model.md §4).
-
-Still blocking or open for their respective phases:
-
-- OQ-006 — Transaction isolation level.
-- OQ-007 — Deadlock retry policy.
-- OQ-011 — Uncertain commit resolution.
-- OQ-012 — Lock ordering.
-- OQ-015 — Recipient enumeration behavior.
-- OQ-013, OQ-014, OQ-019 — Transaction history contract details.
+- OQ-001, OQ-002, OQ-006, OQ-007, OQ-008, OQ-009, OQ-011, OQ-012, OQ-013, OQ-014, OQ-015, OQ-016, OQ-017, OQ-019, OQ-020, OQ-032.
 
 ## 13. Related Documents
 

@@ -1,6 +1,6 @@
 # ADR-001: Architecture Style
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 

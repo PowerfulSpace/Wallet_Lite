@@ -24,6 +24,7 @@ The data model follows these principles:
 6. **Explicit ownership.** Each user owns exactly one wallet.
 7. **Safe retries.** Idempotency records prevent repeated requests from producing duplicate financial effects.
 8. **No silent correction.** Existing ledger entries are not edited or deleted during normal business operation. Corrections, if needed in the future, use compensating transactions.
+9. **Timestamp precision and format.** All persisted UTC timestamps use SQL Server `datetime2(7)` (`CONST-009`). API timestamps use ISO 8601 with explicit UTC (`CONST-026`). The application generates timestamps server-side; clients never supply them.
 
 ## 3. Entity Overview
 

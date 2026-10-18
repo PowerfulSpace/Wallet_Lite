@@ -1,6 +1,6 @@
 # ADR-003: Financial Transaction Atomicity
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 

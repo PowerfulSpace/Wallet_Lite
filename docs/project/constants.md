@@ -23,21 +23,31 @@ This document does not replace domain rules. Domain rules (`DR-###`) and functio
 
 | ID | Name | Value | Unit | Source ADR | Status |
 |---|---|---|---|---|---|
-| CONST-001 | Maximum wallet balance | `1000000.00` | USD | ADR-002 | Proposed |
-| CONST-002 | Maximum operation amount (deposit, transfer) | `1000000.00` | USD | ADR-002 | Proposed |
-| CONST-003 | Monetary precision (scale) | `2` | decimal places | ADR-002 | Proposed |
-| CONST-004 | Monetary SQL type | `decimal(19,2)` | — | ADR-002 | Proposed |
+| CONST-001 | Maximum wallet balance | `1000000.00` | USD | ADR-002 | Accepted |
+| CONST-002 | Maximum operation amount (deposit, transfer) | `1000000.00` | USD | ADR-002 | Accepted |
+| CONST-003 | Monetary precision (scale) | `2` | decimal places | ADR-002 | Accepted |
+| CONST-004 | Monetary SQL type | `decimal(19,2)` | — | ADR-002 | Accepted |
 | CONST-005 | Idempotency key format | `^[A-Za-z0-9_-]{8,128}$` | regex | ADR-005 | Accepted |
 | CONST-006 | Idempotency key maximum length | `128` | characters | ADR-005 | Accepted |
+| CONST-007 | Transaction history default page size | `20` | items | — | Decided |
+| CONST-008 | Transaction history maximum page size | `100` | items | — | Decided |
+| CONST-009 | Timestamp precision (SQL) | `datetime2(7)` | — | — | Decided |
+| CONST-010 | Cursor format | `base64(JSON {createdAtUtc: ISO8601, id: GUID})` | — | — | Decided |
+| CONST-011 | Bounded wait for in-progress idempotent operation | `3` | seconds | ADR-005 | Decided |
+| CONST-012 | Idempotency lease duration | `30` | seconds | ADR-005 | Decided |
 | CONST-013 | Username format | `^[A-Za-z0-9_]{3,32}$` | regex | — | Decided |
 | CONST-014 | Idempotency in-progress polling interval | `100` | milliseconds | ADR-005 | Decided |
 | CONST-015 | Idempotency `4xx` record retention | `0` (delete immediately after response) | seconds | ADR-005 | Decided |
-| CONST-007 | Transaction history default page size | `TBD` | items | — | Open (OQ-013) |
-| CONST-008 | Transaction history maximum page size | `TBD` | items | — | Open (OQ-013) |
-| CONST-009 | Timestamp precision (SQL) | `TBD` | — | — | Open (OQ-019) |
-| CONST-010 | Cursor format | `TBD` | — | — | Open (OQ-014) |
-| CONST-011 | Bounded wait for in-progress idempotent operation | `3` | seconds | ADR-005 | Decided |
-| CONST-012 | Idempotency lease duration | `30` | seconds | ADR-005 | Decided |
+| CONST-016 | Transaction isolation level (financial writes) | `READ COMMITTED` | — | ADR-004 | Decided |
+| CONST-017 | Deadlock retry maximum attempts | `3` | attempts | ADR-004 | Decided |
+| CONST-018 | Deadlock retry base delay | `100` | milliseconds | ADR-004 | Decided |
+| CONST-019 | Deadlock retry exponential multiplier | `2` | × | ADR-004 | Decided |
+| CONST-020 | Deadlock retry jitter | `±20%` | — | ADR-004 | Decided |
+| CONST-021 | Wallet lock/update order | `Wallet.Id` ascending (Guid ordinal comparison) | — | ADR-004 | Decided |
+| CONST-022 | Unknown recipient response policy | `404 RESOURCE_NOT_FOUND` (concealment, indistinguishable from inaccessible transfer) | — | — | Decided |
+| CONST-024 | Development seed user: Alice email | `alice@example.com` | — | — | Decided |
+| CONST-025 | Development seed user: Bob email | `bob@example.com` | — | — | Decided |
+| CONST-026 | API timestamp format | ISO 8601 with explicit UTC, round-trip `O` format | — | — | Decided |
 
 ## 4. How to Add or Change a Constant
 

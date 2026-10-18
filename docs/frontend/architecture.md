@@ -1,7 +1,8 @@
 # Frontend Architecture
 
 **Status:** Draft v0.1  
-**Last Updated:** 2026-10-18
+**Last Updated:** 2026-10-18  
+**Scope:** Out of MVP; future phase.
 
 ## 1. Purpose
 
@@ -297,17 +298,22 @@ This structure is a starting point, not a finalized implementation requirement.
 
 ## 13. Open Decisions
 
-Before implementation, the project should decide:
+Decisions made for the scaffold:
 
-1. Frontend framework and language.
-2. Whether frontend development is part of the initial MVP.
-3. API hosting and cross-origin request strategy.
-4. Authentication and session management.
-5. Routing and state-management approach.
-6. API-client implementation and type generation strategy.
-7. UI component library and styling approach.
-8. Browser automation and end-to-end testing tools.
-9. Build and deployment process.
+- Vue 3, TypeScript, Vite.
+- Pinia for state.
+- axios for HTTP.
+- naive-ui for components.
+
+Decisions deferred until the frontend enters MVP scope:
+
+- API hosting and CORS strategy beyond local development.
+- Authentication and session management.
+- Routing and state-management libraries beyond the current defaults.
+- API-client type generation.
+- UI component library beyond naive-ui.
+- Browser automation and E2E testing.
+- Build and deployment process.
 
 ## 14. Related Documents
 

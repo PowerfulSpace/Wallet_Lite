@@ -306,9 +306,9 @@ The following practices are not permitted:
 
 ## 18. Open Decisions
 
-1. Finalize `.editorconfig` and analyzer severity.
-2. Decide whether to enable warnings-as-errors in CI.
-3. Finalize the application result and error representation conventions.
-4. Decide which use cases require explicit SQL transaction management.
-5. Finalize the repository's testing naming conventions.
-6. Decide whether analyzers beyond the .NET SDK defaults are required.
+1. Finalize `.editorconfig` and analyzer severity. (unique to this document)
+2. Decide whether to enable warnings-as-errors in CI. (tracked in OQ-025)
+3. Finalize the application result and error representation conventions. (unique to this document)
+4. Decide which use cases require explicit SQL transaction management. (resolved in ADR-003, ADR-004)
+5. Finalize the repository's testing naming conventions. (unique to this document)
+6. Decide whether analyzers beyond the .NET SDK defaults are required. (unique to this document)

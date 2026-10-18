@@ -14,6 +14,8 @@ The architecture prioritizes explicit business rules, reliable financial state t
 
 The proposed architecture is a layered application inspired by Clean Architecture.
 
+The solution is `src/Backend/PS.Wallet/PS.Wallet.slnx` (`.slnx` format). The backend projects are `PS.Wallet.Domain`, `PS.Wallet.Application`, `PS.Wallet.Infrastructure`, and `PS.Wallet.API`, located under `src/Backend/PS.Wallet/`. Automated tests are `PS.Wallet.UnitTests` and `PS.Wallet.IntegrationTests`, located under `tests/`.
+
 The application is organized into four primary projects:
 
 - **Domain** — core business concepts, invariants, and domain rules.
@@ -259,13 +261,13 @@ These exclusions are scope decisions for the MVP, not claims that the approaches
 
 The following decisions require explicit confirmation or separate documentation:
 
-- Exact Domain aggregate boundaries and value-object design.
-- Final persistence interfaces and transaction ownership.
-- The concrete SQL Server concurrency strategy.
-- The idempotency record schema, retention policy, and replay representation.
-- The authentication mechanism and development-authentication safeguards.
-- Whether a mediator or validation framework is justified.
-- The precise approach to architectural dependency checks.
+- Exact Domain aggregate boundaries and value-object design. (unique to this document)
+- Final persistence interfaces and transaction ownership. (tracked in concurrency.md §14)
+- The concrete SQL Server concurrency strategy. (tracked in OQ-006)
+- The idempotency record schema, retention policy, and replay representation. (schema and replay tracked in ADR-005 §17 and OQ-010; retention in OQ-010)
+- The authentication mechanism and development-authentication safeguards. (resolved in ADR-007)
+- Whether a mediator or validation framework is justified. (unique to this document)
+- The precise approach to architectural dependency checks. (unique to this document)
 
 Until these decisions are accepted, implementation details must not be treated as fixed solely because they appear in this proposal.
 

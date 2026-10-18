@@ -51,7 +51,7 @@ Clients should use `code` for application logic rather than parsing `title` or `
 |---|---|---|
 | `400 Bad Request` | Invalid request | Malformed JSON, invalid amount, invalid cursor, or failed input validation |
 | `401 Unauthorized` | Authentication required | Missing, invalid, or expired credentials |
-| `403 Forbidden` | Authenticated but explicitly forbidden | Use when access is denied and revealing resource existence is acceptable |
+| `403 Forbidden` | Authenticated but explicitly forbidden | **Reserved.** Not emitted by any MVP endpoint. The MVP conceals resource existence with `404 Not Found` instead. |
 | `404 Not Found` | Resource unavailable | Unknown recipient, unknown transfer, or inaccessible transfer when existence must be concealed |
 | `409 Conflict` | Request conflicts with current state | Insufficient funds, balance limit exceeded, self-transfer, or idempotency key conflict |
 | `415 Unsupported Media Type` | Unsupported request format | Unsupported `Content-Type` |
@@ -65,6 +65,8 @@ Not every status code must be used in the MVP. For example, `429` should not be 
 
 Error codes are stable identifiers intended for client applications, automated tests, and diagnostics.
 
+Codes marked **Reserved** are part of the catalogue for forward compatibility but are not produced by any MVP endpoint. Clients must not depend on receiving them in the MVP.
+
 ### Request Validation
 
 | Code | HTTP Status | Meaning |
@@ -72,13 +74,14 @@ Error codes are stable identifiers intended for client applications, automated t
 | `VALIDATION_ERROR` | 400 | One or more input fields are invalid |
 | `MALFORMED_REQUEST` | 400 | The request body cannot be parsed |
 | `UNSUPPORTED_MEDIA_TYPE` | 415 | The request uses an unsupported media type |
+| `INVALID_CURSOR` | 400 | The pagination cursor is missing, malformed, or undecodable |
 
 ### Authentication and Access
 
 | Code | HTTP Status | Meaning |
 |---|---:|---|
 | `AUTHENTICATION_REQUIRED` | 401 | The request is not authenticated |
-| `ACCESS_DENIED` | 403 | Access is forbidden |
+| `ACCESS_DENIED` | 403 | **Reserved.** Not emitted by any MVP endpoint; see `docs/api/endpoints.md`. |
 | `RESOURCE_NOT_FOUND` | 404 | The requested resource does not exist or is not visible to the current user |
 
 ### Wallet and Financial Operations
@@ -88,6 +91,7 @@ Error codes are stable identifiers intended for client applications, automated t
 | `INSUFFICIENT_FUNDS` | 409 | The sender's wallet cannot cover the transfer |
 | `BALANCE_LIMIT_EXCEEDED` | 409 | The resulting wallet balance would exceed the configured maximum |
 | `INVALID_TRANSFER` | 409 | The transfer violates a business rule, such as transferring to oneself |
+| `SELF_TRANSFER` | 409 | The sender and recipient are the same user |
 | `IDEMPOTENCY_KEY_REUSED` | 409 | A previously used key was supplied with a different request |
 | `OPERATION_CONFLICT` | 409 | The operation conflicts with the current persisted state |
 
@@ -158,7 +162,7 @@ The original operation and its persisted result must remain unchanged.
 
 If a user requests transfer details for a transfer they are not authorized to view, return the same public `404` response used for a nonexistent transfer. This avoids disclosing whether another user's transfer exists.
 
-Whether unknown recipient usernames should also be concealed is an open security decision and must be consistent across the API.
+Unknown recipient usernames are concealed with the same `404 RESOURCE_NOT_FOUND` response used for nonexistent transfers (`CONST-022`). A client cannot distinguish "recipient does not exist" from "recipient exists but you cannot interact with them". See `docs/security/security-model.md §5.2`.
 
 ## 7. Security Requirements
 
@@ -194,10 +198,10 @@ Expected business conflicts, such as insufficient funds, should be observable th
 
 ## 10. Open Decisions
 
-1. Choose stable production values for Problem Details `type` URIs.
-2. Confirm the final application error-code catalogue.
-3. Decide whether unknown recipient usernames should return `404` or a generic response.
-4. Define the trace identifier source and logging format.
-5. Decide whether the API will implement rate limiting in the MVP.
-6. Confirm whether the validation response uses ASP.NET Core's default validation extensions or a customized, standardized format.
-7. Define retryable infrastructure failures and their client-facing behavior.
+1. Choose stable production values for Problem Details `type` URIs. (unique to this document)
+2. Confirm the final application error-code catalogue. (tracked in OQ-020)
+3. Decide whether unknown recipient usernames should return `404` or a generic response. (tracked in OQ-015)
+4. Define the trace identifier source and logging format. (tracked in OQ-029)
+5. Decide whether the API will implement rate limiting in the MVP. (tracked in OQ-023)
+6. Confirm whether the validation response uses ASP.NET Core's default validation extensions or a customized, standardized format. (unique to this document)
+7. Define retryable infrastructure failures and their client-facing behavior. (tracked in OQ-007)

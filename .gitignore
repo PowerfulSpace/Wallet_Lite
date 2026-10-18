@@ -426,3 +426,94 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Wallet_Lite local development files
+appsettings.Development.json
+.env
+.env.local
+dist/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.mimocode/
+
+# Ignore actual env files
+.env
+.env.*
+
+# But keep example env files
+!.env.*.example
+!.env.example
+
+
+
+
+
+
+
+
+
+
+
+# Node / Vue
+node_modules/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Бэкенд — секреты
+**/appsettings.Production.json
+**/appsettings.Development.json
+
+# Батч 49 (О10): локальные HTTPS-сертификаты — не коммитить
+# (*.pfx уже игнорируется в разделе «Others» выше)
+*.pem
+*.key
+*.crt
+*.p12
+
+# Но: keep example / placeholder (если понадобится)
+!*.example.pem
+!*.example.key
+
+# Vite cache
+.vite/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional caches
+.npm
+.eslintcache
+.stylelintcache
+
+# Test coverage results (dotnet test --collect)
+TestResults/
+coverage/
+
+# Временные отчёты аудита
+.audit-tmp/
+
+# Local worktrees (.kilo)
+.kilo/

@@ -79,6 +79,8 @@ The application MUST treat this as an uncertain outcome rather than assuming eit
 
 The client should retry with the same idempotency key. The application must resolve the outcome using persisted database state and the idempotency protocol.
 
+The MVP returns `503 SERVICE_UNAVAILABLE` with code `IDEMPOTENCY_IN_PROGRESS` from the original request and leaves the idempotency record `InProgress`. Recovery happens on the client's retry, through the bounded wait and on-demand lease recovery defined in `ADR-005 §9`.
+
 It MUST NOT create a new logical operation with a new idempotency key merely to bypass uncertainty.
 
 ### 4.3 After Commit

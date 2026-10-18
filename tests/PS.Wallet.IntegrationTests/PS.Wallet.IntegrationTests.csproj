@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Backend\PS.Wallet\PS.Wallet.API\PS.Wallet.API.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PS.Wallet\PS.Wallet.Application\PS.Wallet.Application.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PS.Wallet\PS.Wallet.Infrastructure\PS.Wallet.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Backend\PS.Wallet\PS.Wallet.Domain\PS.Wallet.Domain.csproj" />
+  </ItemGroup>
+</Project>

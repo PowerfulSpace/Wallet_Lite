@@ -245,23 +245,19 @@ The unique constraint is the authoritative arbiter. Application-level `SELECT` b
 
 ## 9. Lock Ordering and Deadlock Handling
 
-Where a transfer requires locks or updates to both wallets, the application should acquire them in a consistent deterministic order, for example by ascending wallet identifier.
+A transfer updates wallet rows in ascending `Wallet.Id` order (`Guid` ordinal comparison, `CONST-021`), regardless of the sender/recipient role. See `ADR-004 §5`.
 
 The implementation must not assume that consistent ordering eliminates every possible deadlock. Other indexes, constraints, query plans, and concurrent operations may still produce deadlocks.
 
-When SQL Server selects a transaction as a deadlock victim:
+When SQL Server selects a transaction as a deadlock victim (`1205`), the transaction is rolled back and the operation may be retried up to `CONST-017` (3) times with exponential backoff `CONST-018` (100 ms base), `CONST-019` (×2), and jitter `CONST-020` (±20%). The retry re-reads state within a new transaction and preserves the original idempotency key.
 
-- The transaction must be treated as failed.
-- The application must not return success unless the operation is known to have committed.
-- Any retry must be bounded and must preserve idempotency.
-- The retry must rerun the required transactional work safely.
-- Non-retryable failures must be surfaced through the documented error model.
-
-Automatic retries must not conceal persistent database problems or create an unbounded request duration.
+Other transient errors are not retried in-process in the MVP. An uncertain commit outcome returns `503 IDEMPOTENCY_IN_PROGRESS` and is resolved by client retry with the same idempotency key, as described in `ADR-004 §8` and `ADR-005 §9`.
 
 ## 10. Isolation and Optimistic Concurrency
 
-The final isolation strategy must be chosen based on the actual SQL statements and transaction boundaries.
+Financial write operations use SQL Server `READ COMMITTED` isolation (`CONST-016`) with explicit conditional updates and deterministic lock ordering. The isolation level is not the primary correctness mechanism; the conditional updates and transaction boundary are.
+
+`SERIALIZABLE` and `SNAPSHOT` are not used in the MVP. See `ADR-004 §6` for rationale.
 
 Conditional updates can protect individual balance predicates without requiring the application to rely on an earlier read. Operations that span multiple rows still require an atomic transaction.
 
@@ -394,14 +390,14 @@ These signals are diagnostic aids and do not replace correctness constraints or 
 
 The following choices require explicit confirmation:
 
-- Exact SQL Server isolation level for financial operations.
-- Whether to use explicit locking hints in selected queries.
-- Whether conditional updates alone are sufficient for each balance operation.
-- Exact transaction ownership and EF Core transaction APIs.
-- Which SQL Server error numbers are eligible for bounded retry.
-- Retry count, backoff, and request-duration limits.
-- Idempotency coordination and recovery after a unique-constraint race.
-- Whether any optimistic concurrency tokens are useful in addition to atomic updates.
+- Exact SQL Server isolation level for financial operations. (tracked in OQ-006)
+- Whether to use explicit locking hints in selected queries. (unique to this document)
+- Whether conditional updates alone are sufficient for each balance operation. (unique to this document)
+- Exact transaction ownership and EF Core transaction APIs. (unique to this document)
+- Which SQL Server error numbers are eligible for bounded retry. (tracked in OQ-007)
+- Retry count, backoff, and request-duration limits. (tracked in OQ-007)
+- Idempotency coordination and recovery after a unique-constraint race. (resolved in OQ-008)
+- Whether any optimistic concurrency tokens are useful in addition to atomic updates. (unique to this document)
 
 No implementation should assume that a preliminary balance read is sufficient to prevent overspending.
 

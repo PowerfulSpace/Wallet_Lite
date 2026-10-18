@@ -91,11 +91,17 @@ Validation MUST include monetary precision, amount boundaries, required identifi
 
 ### NFR-012 — Performance Targets
 
-The project SHOULD define explicit response-time targets for the principal API operations before performance acceptance testing.
+**Status:** Deferred beyond the MVP.
 
-The targets MUST identify the relevant operation, percentile, workload, environment, and measurement method.
+The MVP does not define numeric latency targets. A meaningful performance target requires a concrete workload, an evaluation environment, and a measurement method, none of which are defined for the MVP.
 
-Numeric latency targets remain **TBD** until the expected workload and evaluation environment are agreed.
+The following are recorded as **deferred**, not as passing requirements:
+
+- Response-time percentiles for `POST /api/v1/wallet/deposits`, `POST /api/v1/transfers`, `GET /api/v1/wallet`, and `GET /api/v1/wallet/transactions`.
+- Throughput targets.
+- Concurrency targets beyond correctness (correctness is covered by `NFR-003` and `NFR-024`).
+
+When performance targets are introduced, they MUST identify the operation, percentile, workload, environment, and measurement method. See `OQ-024` in `docs/project/open-questions.md`.
 
 ### NFR-013 — Database Efficiency
 
@@ -235,6 +241,8 @@ Verification methods may include:
 - Performance measurements, where quantitative targets have been agreed.
 
 Requirements with unresolved numeric targets MUST remain explicitly marked as TBD and MUST NOT be treated as having passed quantitative acceptance.
+
+`NFR-012` is explicitly deferred beyond the MVP. Its absence from acceptance verification is intentional and must not be interpreted as a passing performance claim.
 
 ## 12. Related Documents
 

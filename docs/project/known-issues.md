@@ -40,6 +40,15 @@ Each entry uses the following fields:
 - **Mitigation:** The API contract explicitly states this behavior. Clients must not cache rejections. The `Idempotency-Key` is documented as "one logical operation", not "one HTTP response".
 - **Revisit by:** Post-MVP if strict replay semantics become a requirement.
 
+### KI-002 — 15 documents have unlabeled Open Decisions entries
+
+- **Status:** Open
+- **Affects:** `docs/adr/ADR-005`, `docs/adr/ADR-006`, `docs/adr/ADR-007`, `docs/api/api-guidelines.md` (partially labeled), `docs/architecture/architecture.md`, `docs/architecture/concurrency.md`, `docs/architecture/data-model.md`, `docs/architecture/system-context.md`, `docs/development/database-migrations.md`, `docs/operations/configuration.md`, `docs/operations/observability.md`, `docs/operations/recovery.md`, `docs/project/roadmap.md`, `docs/requirements/domain-rules.md`, `docs/requirements/functional-requirements.md`, `docs/requirements/non-functional-requirements.md`, `docs/requirements/overview.md`
+- **Description:** Five high-traffic documents (`docs/development/setup.md`, `docs/development/testing.md`, `docs/development/coding-standards.md`, `docs/security/security-model.md`, `docs/security/threat-model.md`) have labeled `Open Decisions` entries as of this revision. Fifteen other documents still have unlabeled entries, which may duplicate or diverge from `docs/project/open-questions.md`.
+- **Risk:** A future reader may treat an unlabeled document-local open decision as authoritative when it is already resolved in `open-questions.md`, or vice versa.
+- **Mitigation:** The five most-referenced documents are labeled. The remaining fifteen are explicitly deferred and should be labeled before the corresponding implementation phase begins.
+- **Revisit by:** Before Phase 6 (Transaction History and API Consistency), or earlier if a specific document becomes the subject of an ADR.
+
 ## 4. Related Documents
 
 - `docs/project/open-questions.md`

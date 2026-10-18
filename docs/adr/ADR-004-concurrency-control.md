@@ -1,6 +1,6 @@
 # ADR-004: Concurrency Control
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-18
 - **Decision Owners:** Project Maintainers
 
@@ -35,7 +35,7 @@ The implementation must ensure that:
 - Duplicate idempotency requests cannot create duplicate financial effects.
 - Deadlocks and transient database failures are handled safely.
 
-The exact SQL statements, transaction isolation level, and retry policy must be finalized during implementation and validated by integration tests.
+The exact SQL statements are finalized in `docs/architecture/concurrency.md §5`. The isolation level is `READ COMMITTED` (`CONST-016`, §6). The retry policy is defined in §8 (`CONST-017`–`CONST-020`). All three are validated by SQL Server integration tests, not assumed from documentation.
 
 ## 3. Conditional Balance Updates
 
@@ -101,25 +101,31 @@ If the transaction fails, no partial financial result may remain committed.
 
 ## 5. Locking and Lock Order
 
-SQL Server manages locks for the selected isolation level and statements.
+A transfer must update two wallet rows. To reduce avoidable deadlocks between simultaneous transfers in opposite directions, the implementation acquires or updates wallet rows in ascending `Wallet.Id` order (`Guid` ordinal comparison, `CONST-021`), regardless of which wallet is the sender and which is the recipient.
 
-The implementation should keep transactions short and use a consistent resource-access order where practical.
+Concrete consequences:
 
-For transfers involving two wallets, the implementation should acquire or update wallet resources in a deterministic order, such as ascending wallet ID, when this can be done without weakening the required conditional-update guarantees.
+- The sender debit and recipient credit are executed against wallet rows sorted by `Id`, not in "sender-first" order.
+- The conditional `UPDATE` predicates (`Balance >= @Amount`, `Balance + @Amount <= @Max`) are still evaluated per row inside the transaction. Sorting the rows does not weaken the condition.
+- `Transfer`, `LedgerEntry`, and idempotency inserts happen after the wallet updates. They are not part of the lock-order rule.
 
-A consistent order reduces the likelihood of deadlocks between simultaneous transfers in opposite directions.
+Deterministic ordering reduces but does not eliminate deadlocks. SQL Server can still select a transaction as a deadlock victim due to index or constraint interactions. The bounded retry in §8 handles that residual case.
 
-The final strategy must be tested against SQL Server rather than assumed to be correct from application-level logic alone.
+The lock order must be verified by SQL Server integration tests using opposite-direction concurrent transfers.
 
 ## 6. Isolation Level
 
-The initial implementation will use SQL Server's normal transactional behavior with explicit concurrency-safe balance updates.
+Financial write operations use SQL Server `READ COMMITTED` isolation (`CONST-016`) combined with:
 
-The precise isolation level remains an implementation decision.
+- Atomic conditional balance updates (`WHERE Balance >= @Amount`, `WHERE Balance + @Amount <= @Max`).
+- Explicit deterministic lock ordering for multi-wallet transfers (see §5).
+- Stable primary-key lookups for wallet rows.
 
-The selected level must be documented after the transaction and query strategy is implemented and tested. Stronger isolation should not be added without understanding its impact on locking, throughput, and deadlocks.
+`SERIALIZABLE` is not used because it introduces range locks that materially increase deadlock rate on transfers without adding correctness beyond what conditional updates provide. `SNAPSHOT` is not used because it requires database-level `ALLOW_SNAPSHOT_ISOLATION` and changes `UPDATE` conflict semantics (`3960`), complicating retry behavior for the MVP.
 
-Correctness must not depend solely on increasing the isolation level if an atomic conditional update or database constraint is required to enforce a specific invariant.
+`READ COMMITTED` is safe here because correctness does not depend on the isolation level alone. It depends on conditional updates that evaluate their predicate inside the write, and on the transaction boundary that contains all writes for one transfer.
+
+This choice must be verified by SQL Server integration tests, not assumed from documentation.
 
 ## 7. Idempotency Under Concurrency
 
@@ -141,18 +147,30 @@ Unique constraint violations and transaction conflicts must be handled as expect
 
 SQL Server may detect deadlocks when concurrent transactions acquire overlapping locks in different orders.
 
-The application must:
+The MVP treats **SQL error 1205 (deadlock victim)** as retryable. Other transient errors (connection loss, timeout, Azure transient errors) are not automatically retried in the MVP; they surface as `500` and rely on the client's idempotent retry (`ADR-005`).
 
-- Keep financial transactions as short as practical.
-- Apply a consistent resource-access order where feasible.
-- Recognize relevant deadlock and transient-failure conditions.
-- Use bounded retries only when the operation can be safely retried.
-- Avoid retry loops without limits.
-- Preserve idempotency and transaction atomicity during retries.
+The retry policy is bounded:
 
-A retry must not repeat an already committed financial effect.
+- Maximum attempts: `CONST-017` (3).
+- Base delay: `CONST-018` (100 ms).
+- Exponential multiplier: `CONST-019` (×2).
+- Jitter: `CONST-020` (±20%).
 
-If the commit outcome is uncertain, the application must establish the operation's result through a safe idempotency strategy rather than blindly rerunning the financial writes.
+A retry must:
+
+- Preserve the original transaction scope and all financial writes.
+- Not repeat external side effects (there are none in the MVP).
+- Not create a second idempotency record.
+- Not attempt a new idempotency key.
+- Re-read the state inside the new transaction; it must not reuse stale in-memory values.
+
+**Uncertain commit outcomes.** A connection failure or exception raised by `SaveChangesAsync` or `CommitAsync` after the transaction has begun does **not** prove that the transaction rolled back. The application must not:
+
+- Retry the financial writes blindly.
+- Return `500` claiming failure.
+- Delete or complete the idempotency record as failed.
+
+Instead, the operation returns `503 SERVICE_UNAVAILABLE` with code `IDEMPOTENCY_IN_PROGRESS`. The idempotency record remains `InProgress`. A client retry with the same key triggers the bounded wait and on-demand recovery defined in `ADR-005 §9`. Only after durable state confirms either rollback or commit does the record transition to `Completed` or permit a safe retry.
 
 ## 9. Error Semantics
 

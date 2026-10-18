@@ -325,10 +325,10 @@ Not selected as the default because the MVP requires valid retries after retryab
 
 ## 17. Open Decisions
 
-1. Exact response fields persisted for replay.
-2. Retention period and cleanup strategy.
+1. Exact response fields persisted for replay. (tracked in OQ-018)
+2. Retention period and cleanup strategy. (tracked in OQ-010)
 3. Exact conflict and retryable error codes.
-4. Whether response replay includes the original `Location` header.
+4. Whether response replay includes the original `Location` header. (tracked in OQ-018)
 
 The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
 

@@ -30,6 +30,8 @@ Install the following tools:
 | SQL Server Management Studio, Azure Data Studio, or another SQL client | Inspect and manage the database |
 | IDE or editor | Develop and debug the application |
 
+- Node.js `^22.18.0` or `>=24.12.0` and npm — for the frontend scaffold.
+
 Docker is recommended for running SQL Server locally if a suitable Docker environment is available.
 
 Verify the .NET installation:
@@ -104,8 +106,8 @@ The connection string is illustrative. Its exact format depends on the SQL Serve
 If ASP.NET Core User Secrets are configured for the API project, initialize them with:
 
 ```bash
-dotnet user-secrets init --project <path-to-api-project>
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local-connection-string>" --project <path-to-api-project>
+dotnet user-secrets init --project src/Backend/PS.Wallet/PS.Wallet.API
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local-connection-string>" --project src/Backend/PS.Wallet/PS.Wallet.API
 ```
 
 Replace the project path and connection string with the actual values.
@@ -168,8 +170,8 @@ For example, if the required EF Core tools and project structure are configured:
 
 ```bash
 dotnet ef database update \
-  --project <path-to-infrastructure-project> \
-  --startup-project <path-to-api-project>
+  --project src/Backend/PS.Wallet/PS.Wallet.Infrastructure \
+  --startup-project src/Backend/PS.Wallet/PS.Wallet.API
 ```
 
 Replace the placeholders with the actual project paths.
@@ -188,7 +190,14 @@ The initial setup should:
 - Ensure each seeded user has the expected wallet.
 - Avoid inserting duplicate seed records on repeated application startup.
 
-The initial wallet balance and the exact seed-data strategy must be finalized in the data model and implementation.
+The seed data consists of two development users:
+
+- Alice — username `alice`, email `alice@example.com` (`CONST-024`).
+- Bob — username `bob`, email `bob@example.com` (`CONST-025`).
+
+Each user has exactly one wallet starting at `0.00` (`DR-047`). No opening ledger entry is created.
+
+Seed application must be idempotent. It must not create duplicate users, wallets, or ledger entries when applied multiple times. The mechanism may use EF Core `HasData` in a development-only migration, or a startup seeder with `IF NOT EXISTS` semantics. Production must not run development seed data.
 
 Do not manually modify the schema in a way that bypasses migrations.
 
@@ -197,7 +206,7 @@ Do not manually modify the schema in a way that bypasses migrations.
 Start the API project:
 
 ```bash
-dotnet run --project <path-to-api-project>
+dotnet run --project src/Backend/PS.Wallet/PS.Wallet.API
 ```
 
 The actual project path and launch profile depend on the final solution structure.
@@ -225,7 +234,7 @@ dotnet test
 For a specific test project:
 
 ```bash
-dotnet test <path-to-test-project>
+dotnet test tests/PS.Wallet.UnitTests
 ```
 
 The test suite should include:
@@ -307,11 +316,29 @@ Production deployment instructions belong in the operations documentation.
 
 ## 13. Open Decisions
 
-1. Confirm the final solution and project names.
-2. Decide whether Docker Compose will be the standard local SQL Server setup.
-3. Define the supported SQL Server version and image tag.
-4. Finalize the development authentication mechanism.
-5. Decide how seed data is applied and restricted by environment.
-6. Define the API's local URL, launch profiles, and OpenAPI configuration.
-7. Define the integration-test database lifecycle.
-8. Confirm whether a repository-level setup script will automate initialization.
+1. Confirm the final solution and project names. (unique to this document)
+2. Decide whether Docker Compose will be the standard local SQL Server setup. (unique to this document)
+3. Define the supported SQL Server version and image tag. (unique to this document)
+4. Finalize the development authentication mechanism. (resolved in ADR-007)
+5. Decide how seed data is applied and restricted by environment. (resolved in OQ-032; setup.md §7)
+6. Define the API's local URL, launch profiles, and OpenAPI configuration. (unique to this document)
+7. Define the integration-test database lifecycle. (tracked in OQ-026)
+8. Confirm whether a repository-level setup script will automate initialization. (unique to this document)
+
+## 14. Frontend Scaffold
+
+The frontend scaffold lives at `src/Frontend/PS.Wallet/`. It is not part of the MVP but is included for future development.
+
+```bash
+cd src/Frontend/PS.Wallet
+npm ci
+npm run dev
+```
+
+Dev server: http://localhost:5173 (strict port).
+
+Vite proxies /api to the backend at http://localhost:5254.
+
+The backend must be running for API calls to succeed.
+
+The frontend currently contains placeholder views and no business functionality.

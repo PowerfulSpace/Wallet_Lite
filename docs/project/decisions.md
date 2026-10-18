@@ -28,44 +28,16 @@ A decision SHOULD be marked `Accepted` only after the relevant trade-offs and ou
 
 | ID | Decision Area | Current Proposal | Status | Detailed Record |
 |---|---|---|---|---|
-| DEC-001 | Architecture style | Clean Architecture-inspired modular monolith | Proposed | `docs/adr/ADR-001-architecture-style.md` |
+| DEC-001 | Architecture style | Clean Architecture-inspired modular monolith | Accepted | `docs/adr/ADR-001-architecture-style.md` |
 | DEC-002 | Monetary precision | C# `decimal`, SQL Server `decimal(19,2)`, and validated monetary strings in the API | Accepted | `docs/adr/ADR-002-money-and-precision.md` |
-| DEC-003 | Transaction atomicity | Financial changes and the successful idempotency result commit atomically | Proposed | `docs/adr/ADR-003-transaction-atomicity.md` |
-| DEC-004 | Concurrency control | Atomic balance updates protected against concurrent operations | Proposed | `docs/adr/ADR-004-concurrency-control.md` |
+| DEC-003 | Transaction atomicity | Financial changes and the successful idempotency result commit atomically | Accepted | `docs/adr/ADR-003-transaction-atomicity.md` |
+| DEC-004 | Concurrency control | Atomic balance updates protected against concurrent operations | Accepted | `docs/adr/ADR-004-concurrency-control.md` |
 | DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Proposed (MVP scope; remaining in ADR-005 §17) | `docs/adr/ADR-005-idempotency.md` |
 | DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Proposed (MVP scope; remaining in ADR-006 §13) | `docs/adr/ADR-006-ledger-model.md` |
 | DEC-007 | Development authentication | Provide simplified development authentication that is unavailable in Production | Proposed | `docs/adr/ADR-007-development-authentication.md` |
 | DEC-008 | Project constants | Numeric and format constants tracked in a single file | Accepted | `docs/project/constants.md` |
 
 ## 4. Summary of Proposed Decisions
-
-### DEC-001: Architecture Style
-
-The application is proposed as a modular monolith organized around Domain, Application, Infrastructure, and API responsibilities.
-
-The architecture aims to keep business rules independent of infrastructure concerns and support focused unit and integration testing.
-
-Microservices are outside the current MVP scope.
-
-**Open considerations:** Final project boundaries, dependency enforcement, and the need for additional libraries.
-
-### DEC-003: Transaction Atomicity
-
-A successful deposit or transfer must persist all related financial changes in one database transaction.
-
-For transfers, the sender debit, recipient credit, transfer record, ledger entries, and successful idempotency result must commit atomically.
-
-A partial financial operation must not be visible as a successful completed operation.
-
-**Open considerations:** Transaction ownership, isolation configuration, and behavior when the client cannot determine whether a commit succeeded.
-
-### DEC-004: Concurrency Control
-
-Concurrent operations must preserve wallet balance and ledger invariants.
-
-The proposal uses atomic database updates with appropriate conditions and transaction protection rather than relying on an unprotected read-then-update sequence.
-
-**Open considerations:** Isolation level, lock ordering, deadlock handling, and retry policy.
 
 ### DEC-005: Idempotency
 
@@ -79,7 +51,7 @@ The proposed behavior is:
 - The idempotency result must be committed atomically with the successful operation.
 - Failed attempts must not permanently prevent a valid retry unless an explicitly documented rule requires otherwise.
 
-**Open considerations:** Key retention, request fingerprinting, concurrent key reservation, and recovery after an uncertain commit.
+**Open considerations:** Key retention (`OQ-010`), response replay representation, and `Location` header behavior (`OQ-018`). The request fingerprint (`OQ-017`), concurrent key reservation (`OQ-008`), and the key format/length (`CONST-005/006`) are resolved; see `ADR-005 §17` for the remaining items.
 
 **Status note:** MVP scope; remaining open decisions in `ADR-005 §17`.
 
@@ -91,7 +63,7 @@ A deposit creates one positive ledger entry. A transfer creates two entries of e
 
 Normal application operations must not edit or delete historical ledger entries. Corrections should use compensating transactions.
 
-**Open considerations:** Initial balance policy, ledger initialization, operation references, and enforcement of ledger cardinality.
+**Open considerations:** Ledger reference model, ledger fields for audit, reconciliation execution, transaction-history response fields, and database constraints/indexes (see `ADR-006 §13`). Initial balance is resolved (`DR-047`, `OQ-001`).
 
 **Status note:** MVP scope; remaining open decisions in `ADR-006 §13`.
 
@@ -105,7 +77,13 @@ Development authentication must not be available in Production. The backend rema
 
 ## 4a. Accepted Decisions
 
+DEC-001 (architecture style) is accepted and recorded in `docs/adr/ADR-001-architecture-style.md`: a Clean Architecture-inspired modular monolith organized around Domain, Application, Infrastructure, and API responsibilities, with microservices outside the current MVP scope.
+
 DEC-002 (monetary precision) is accepted and recorded in `docs/adr/ADR-002-money-and-precision.md`: C# `decimal` for monetary calculations, SQL Server `decimal(19,2)` for persisted values, validated monetary strings at the API boundary, and explicit rejection of amounts with more than two fractional decimal digits.
+
+DEC-003 (transaction atomicity) is accepted and recorded in `docs/adr/ADR-003-transaction-atomicity.md`: a successful deposit or transfer must persist all related financial changes in one database transaction, with the sender debit, recipient credit, transfer record, ledger entries, and successful idempotency result committing atomically.
+
+DEC-004 (concurrency control) is accepted and recorded in `docs/adr/ADR-004-concurrency-control.md`: conditional balance updates (`WHERE Balance >= @Amount`, `WHERE Balance + @Amount <= @Max`) under `READ COMMITTED` isolation (`CONST-016`), deterministic `Wallet.Id` lock ordering (`CONST-021`), and a bounded deadlock-retry policy (`CONST-017`–`CONST-020`).
 
 ## 5. Relationship to Open Questions
 

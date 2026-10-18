@@ -1,13 +1,16 @@
 # Frontend Overview
 
 **Status:** Draft v0.1  
-**Last Updated:** 2026-10-18
+**Last Updated:** 2026-10-18  
+**Scope:** Out of MVP; future phase.
 
 ## 1. Purpose
 
 This document defines the proposed scope and responsibilities of a potential frontend application for the Wallet API project.
 
 **Scope note:** The frontend is **out of MVP scope**. This document and the other `docs/frontend/` documents are drafts for a future phase. They do not commit the project to implementing a frontend as part of the MVP.
+
+**Implementation status:** A frontend scaffold (`src/Frontend/PS.Wallet/`) exists with Vue 3, TypeScript, Vite, Pinia, axios, and naive-ui installed. Backend development remains the priority; the frontend implements no business functionality beyond placeholder views in the current phase.
 
 The frontend would provide a user interface for interacting with virtual wallets, making deposits, initiating transfers, and reviewing transaction history.
 
@@ -217,17 +220,20 @@ Frontend tests MUST NOT replace backend tests for financial invariants, database
 
 ## 12. Technology Decisions
 
-The following decisions remain open:
+The following decisions have been made for the scaffold:
 
-1. Which frontend framework will be used?
-2. Will the frontend be a separate application or hosted alongside the API?
-3. Which routing and state-management approach is appropriate?
-4. How will authentication be integrated?
-5. Which component library, if any, will be adopted?
-6. Will end-to-end tests use a browser automation framework?
-7. Is the frontend required for the initial MVP, or will API tooling be sufficient for demonstration?
+1. **Framework:** Vue 3.
+2. **Language:** TypeScript.
+3. **Build tool:** Vite.
+4. **State management:** Pinia.
+5. **HTTP client:** axios.
+6. **Component library:** naive-ui.
 
-These decisions should be recorded before the frontend implementation begins.
+The following decisions remain open and are deferred until the frontend is brought into MVP scope:
+
+- Authentication integration.
+- End-to-end testing framework.
+- Whether the frontend is required for the MVP.
 
 ## 13. Related Documents
 

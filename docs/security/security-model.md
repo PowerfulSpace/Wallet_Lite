@@ -45,7 +45,7 @@ Development authentication must:
 - Be covered by tests verifying that Production startup fails safely or the development authentication handler is not registered when the application runs in Production.
 - Avoid introducing reusable secrets or credentials into source control.
 
-The exact development authentication mechanism remains an implementation decision.
+The development authentication mechanism is defined in `ADR-007`. The MVP proposal is a development-only authentication handler that maps a controlled request value (for example, a header) to a pre-seeded user. The exact handler implementation, header name, and accepted values are recorded in `ADR-007` and will be finalized when the development environment is implemented.
 
 ### 3.3 Production Authentication
 
@@ -185,10 +185,10 @@ The security model must be reviewed when authentication mechanisms, API endpoint
 
 ## 11. Open Decisions
 
-1. Select the development authentication mechanism.
-2. Define the mapping from authentication claims to application users.
-3. Finalize username normalization and case-sensitivity rules.
-4. Decide whether unknown recipient usernames should be concealed.
-5. Define secret-management requirements for any future production deployment.
-6. Determine whether rate limiting is included in the MVP.
-7. Define the minimum security logging and audit requirements.
+1. Select the development authentication mechanism. (resolved in ADR-007)
+2. Define the mapping from authentication claims to application users. (tracked in OQ-022)
+3. Finalize username normalization and case-sensitivity rules. (resolved in OQ-002; data-model.md §4)
+4. Decide whether unknown recipient usernames should be concealed. (resolved in OQ-015; CONST-022)
+5. Define secret-management requirements for any future production deployment. (tracked in OQ-021)
+6. Determine whether rate limiting is included in the MVP. (tracked in OQ-023)
+7. Define the minimum security logging and audit requirements. (tracked in OQ-029)

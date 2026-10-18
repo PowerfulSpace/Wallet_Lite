@@ -372,9 +372,9 @@ Code coverage may be tracked as a quality indicator, but a high coverage percent
 
 ## 13. Open Decisions
 
-1. Define the test-project structure.
-2. Choose the standard SQL Server test provisioning mechanism.
-3. Define database reset and isolation strategies.
-4. Decide how failure injection will be implemented.
-5. Define the CI provider and required quality gates.
-6. Establish baseline coverage expectations without treating coverage as a substitute for scenario-based testing.
+1. Define the test-project structure. (unique to this document)
+2. Choose the standard SQL Server test provisioning mechanism. (tracked in OQ-026)
+3. Define database reset and isolation strategies. (tracked in OQ-026)
+4. Decide how failure injection will be implemented. (unique to this document)
+5. Define the CI provider and required quality gates. (tracked in OQ-025)
+6. Establish baseline coverage expectations without treating coverage as a substitute for scenario-based testing. (unique to this document)

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PS.Wallet.Application\PS.Wallet.Application.csproj" />
+    <ProjectReference Include="..\PS.Wallet.Infrastructure\PS.Wallet.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -199,13 +199,13 @@ The API must:
 
 The default page size, maximum page size, cursor encoding, and behavior for invalid or stale cursors must be defined in `docs/api/endpoints.md`.
 
+The default page size is `CONST-007` (20). The maximum page size is `CONST-008` (100). Values above the maximum are rejected with `400 VALIDATION_ERROR`.
+
 ## 12. Timestamps and Ordering
 
-Timestamps are expressed in UTC using an explicitly documented ISO 8601 representation.
+Timestamps are expressed in UTC using ISO 8601 with explicit UTC (`CONST-026`). The application uses .NET's round-trip `"O"` format for serialization, which produces fractional seconds when present (e.g. `2026-10-18T12:30:45.1234567Z`).
 
-For example:
-
-`2026-10-18T12:30:45Z`
+Persisted timestamps use SQL Server `datetime2(7)` (`CONST-009`), preserving the same precision.
 
 The server is responsible for assigning authoritative operation timestamps. Client-provided timestamps must not determine the order or creation time of financial records.
 
@@ -255,16 +255,16 @@ Client-facing error messages must not expose internal implementation details.
 
 The following items must be finalized in the relevant contracts:
 
-- Accepted monetary string grammar.
-- Identifier format for each resource.
-- Exact success response bodies and `Location` header behavior.
-- Idempotency key syntax, length, retention, and replay representation.
-- Default and maximum transaction-history page sizes.
-- Cursor encoding and invalid-cursor behavior.
-- Exact `403` versus `404` resource-visibility policy.
-- Rate-limiting requirements.
-- Request-size and execution-time limits.
-- Exact error-code catalogue and validation response shape.
+- Accepted monetary string grammar. (unique to this document)
+- Identifier format for each resource. (unique to this document)
+- Exact success response bodies and `Location` header behavior. (tracked in OQ-018)
+- Idempotency key syntax, length, retention, and replay representation. (partially resolved: syntax/length in CONST-005/006; retention/replay in OQ-010)
+- Default and maximum transaction-history page sizes. (tracked in OQ-013)
+- Cursor encoding and invalid-cursor behavior. (tracked in OQ-014)
+- Exact `403` versus `404` resource-visibility policy. (tracked in OQ-015)
+- Rate-limiting requirements. (tracked in OQ-023)
+- Request-size and execution-time limits. (unique to this document)
+- Exact error-code catalogue and validation response shape. (tracked in OQ-020)
 
 Until those decisions are documented, implementations must not independently invent incompatible conventions.
 

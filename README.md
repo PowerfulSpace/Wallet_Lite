@@ -91,6 +91,8 @@ The application is intended to remain a modular monolith rather than a distribut
 
 Financial operations must use database transactions and concurrency controls appropriate to the accepted design. A transfer must not be partially committed.
 
+Monetary precision is `decimal(19,2)` in SQL Server and `decimal` in C#; see `ADR-002`.
+
 See `docs/architecture/architecture.md` and `docs/architecture/data-model.md`.
 
 ## 6. API Overview
@@ -116,21 +118,23 @@ These endpoints represent the planned API contract and should be checked against
 The planned documentation structure is:
 
 ```text
-wallet-api/
+Wallet_Lite/
 ├── AGENTS.md
 ├── README.md
 ├── docs/
-│   ├── requirements/
-│   ├── architecture/
-│   ├── api/
-│   ├── security/
-│   ├── development/
-│   ├── adr/
-│   ├── operations/
-│   ├── project/
-│   └── frontend/
 ├── src/
+│   ├── Backend/
+│   │   └── PS.Wallet/
+│   │       ├── PS.Wallet.slnx
+│   │       ├── PS.Wallet.Domain/
+│   │       ├── PS.Wallet.Application/
+│   │       ├── PS.Wallet.Infrastructure/
+│   │       └── PS.Wallet.API/
+│   └── Frontend/
+│       └── PS.Wallet/
 └── tests/
+    ├── PS.Wallet.UnitTests/
+    └── PS.Wallet.IntegrationTests/
 ```
 
 This is a target structure. Directories and implementation files may not exist until the corresponding development work has been completed.
@@ -245,7 +249,7 @@ See `docs/development/testing.md`.
 
 The project documentation establishes the proposed scope and design direction. The implementation must be developed and validated against these documents.
 
-See `docs/project/open-questions.md` for the complete list and `docs/project/decisions.md` for the status of proposed decisions.
+All P0 blocking decisions for the MVP are resolved. Several P1 decisions remain open and are listed in `docs/project/open-questions.md §12` with their target phase. They do not block the start of implementation (Phase 1) but must be closed before their respective phases. Accepted and proposed decisions are tracked in `docs/project/decisions.md`.
 
 ## 12. Contributing
 

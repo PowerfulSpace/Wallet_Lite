@@ -58,7 +58,7 @@ The phases may overlap where dependencies allow, but financial write operations 
 - Data model and concurrency strategy.
 - API guidelines, endpoint specifications, and error model.
 - Security and threat model.
-- Initial Architecture Decision Records (ADRs).
+- Architecture Decision Records (ADRs), accepted where fully resolved and proposed where still in MVP scope (see `docs/project/decisions.md`).
 
 ### Acceptance Criteria
 
@@ -67,7 +67,8 @@ The phases may overlap where dependencies allow, but financial write operations 
 - Deposit and transfer atomicity requirements are documented.
 - Idempotency behavior is specified.
 - Development authentication restrictions are documented.
-- Open questions are tracked explicitly.
+- Open questions are tracked explicitly in `docs/project/open-questions.md`.
+- Blocking P0 questions for the first financial write are resolved (see `open-questions.md §12`).
 
 ### Exit Condition
 
@@ -85,13 +86,40 @@ The requirements are sufficiently stable to begin implementation. Unresolved imp
 
 ### Deliverables
 
-- Solution projects for Domain, Application, Infrastructure, and API.
-- Dependency injection and application startup.
-- Configuration and environment separation.
-- Initial automated test projects.
-- Database connection configuration.
-- Local development instructions.
-- Initial CI pipeline, if included in the project setup.
+**Build and solution files (repository root):**
+
+- `global.json` — pinned .NET SDK version (`10.0.x`, `rollForward: latestFeature`).
+- `Directory.Build.props` — shared compiler settings: `<TargetFramework>net10.0</TargetFramework>`, `<Nullable>enable</Nullable>`, `<LangVersion>latest</LangVersion>`, `<ImplicitUsings>enable</ImplicitUsings>`, `<TreatWarningsAsErrors>false</TreatWarningsAsErrors>` (strictness deferred to Phase 3).
+- `Directory.Packages.props` — central package management. Phase 1 package set: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio`, `NSubstitute`, `Microsoft.AspNetCore.Mvc.Testing`. EF Core and other packages added in their respective phases.
+- `.editorconfig` — baseline C# and file conventions.
+
+**Solution and projects:**
+
+- `src/Backend/PS.Wallet/PS.Wallet.slnx` (`.slnx` format, not `.sln`).
+- `src/Backend/PS.Wallet/PS.Wallet.Domain/` — project `PS.Wallet.Domain`.
+- `src/Backend/PS.Wallet/PS.Wallet.Application/` — project `PS.Wallet.Application`.
+- `src/Backend/PS.Wallet/PS.Wallet.Infrastructure/` — project `PS.Wallet.Infrastructure`.
+- `src/Backend/PS.Wallet/PS.Wallet.API/` — project `PS.Wallet.API`.
+- `tests/PS.Wallet.UnitTests/` — project `PS.Wallet.UnitTests`.
+- `tests/PS.Wallet.IntegrationTests/` — project `PS.Wallet.IntegrationTests`.
+
+**Project references (Clean Architecture):**
+
+- `PS.Wallet.Application` → `PS.Wallet.Domain`.
+- `PS.Wallet.Infrastructure` → `PS.Wallet.Domain`, `PS.Wallet.Application`.
+- `PS.Wallet.API` → `PS.Wallet.Application`, `PS.Wallet.Infrastructure`.
+- `PS.Wallet.UnitTests` → all backend projects.
+- `PS.Wallet.IntegrationTests` → `PS.Wallet.API`, `PS.Wallet.Application`, `PS.Wallet.Infrastructure`, `PS.Wallet.Domain`, plus `Microsoft.AspNetCore.Mvc.Testing`.
+
+**Application scaffolding:**
+
+- Dependency injection composition in `PS.Wallet.API`.
+- Application startup with configuration validation.
+- Configuration and environment separation (`appsettings.json`, `appsettings.Development.json` excluded from git via `.gitignore`).
+- Initial automated test projects with at least one placeholder test that compiles and runs.
+- Database connection configuration placeholder (no migrations yet — those belong to Phase 2).
+- Local development instructions in `docs/development/setup.md`, updated to reference the actual project names and build commands.
+- No CI pipeline in Phase 1; `OQ-025` is deferred to a later phase.
 
 ### Acceptance Criteria
 
@@ -101,10 +129,16 @@ The requirements are sufficiently stable to begin implementation. Unresolved imp
 - Development and Test settings are separated.
 - Development authentication cannot be enabled in Production.
 - No real secrets are committed to source control.
+- `dotnet build` completes with no errors.
+- `dotnet test` discovers and runs test projects (0 or more tests, all passing).
+- Project names and paths match this section exactly.
+- `PS.Wallet.slnx` uses the `.slnx` format.
+- No project contains template placeholder code (`Class1.cs`, `WeatherForecast.cs`, etc.).
+- `.editorconfig`, `Directory.Build.props`, `Directory.Packages.props`, and `global.json` exist and are consistent with each other.
 
 ### Exit Condition
 
-A developer can build, run, and test the application using the documented setup process.
+A developer can clone the repository, run `dotnet build` and `dotnet test`, and see a successful build with no warnings that would fail Phase 3's `TreatWarningsAsErrors` policy. The solution contains exactly the projects listed above, in the listed paths, with the listed references.
 
 ## 6. Phase 2 — Domain and Persistence
 

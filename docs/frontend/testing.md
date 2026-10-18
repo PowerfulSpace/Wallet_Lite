@@ -1,7 +1,8 @@
 # Frontend Testing
 
 **Status:** Draft v0.1  
-**Last Updated:** 2026-10-18
+**Last Updated:** 2026-10-18  
+**Scope:** Out of MVP; future phase.
 
 ## 1. Purpose
 

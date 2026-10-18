@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="PS.Wallet.API/PS.Wallet.API.csproj" />
+  <Project Path="PS.Wallet.Application/PS.Wallet.Application.csproj" />
+  <Project Path="PS.Wallet.Domain/PS.Wallet.Domain.csproj" />
+  <Project Path="PS.Wallet.Infrastructure/PS.Wallet.Infrastructure.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="..\..\..\tests\PS.Wallet.IntegrationTests\PS.Wallet.IntegrationTests.csproj" />
+    <Project Path="..\..\..\tests\PS.Wallet.UnitTests\PS.Wallet.UnitTests.csproj" />
+  </Folder>
+</Solution>
