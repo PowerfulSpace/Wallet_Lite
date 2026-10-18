@@ -48,6 +48,9 @@ This document does not replace domain rules. Domain rules (`DR-###`) and functio
 | CONST-024 | Development seed user: Alice email | `alice@example.com` | — | — | Decided |
 | CONST-025 | Development seed user: Bob email | `bob@example.com` | — | — | Decided |
 | CONST-026 | API timestamp format | ISO 8601 with explicit UTC, round-trip `O` format | — | — | Decided |
+| CONST-027 | Ledger entry operation reference | Two nullable FKs (`DepositId`, `TransferId`); exactly one non-null (`CHECK`) | — | — | Decided |
+| CONST-028 | Integration test database name | `Wallet_Test` | — | — | Decided |
+| CONST-029 | Idempotency `2xx` record retention | `24` | hours | ADR-005 | Decided |
 
 ## 4. How to Add or Change a Constant
 

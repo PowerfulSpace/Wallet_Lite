@@ -158,6 +158,8 @@ For a successful deposit or transfer, the financial changes and successful idemp
 
 This sequence is conceptual. The final implementation may introduce additional components for validation, authorization, logging, or transaction handling without changing the responsibility boundaries.
 
+The API uses MediatR for command and query dispatch. `ICurrentUser` is resolved from the authenticated principal and injected into application handlers. The API layer maps application exceptions (`NotFoundException`, domain exceptions) to `ProblemDetails`.
+
 ## 7. Financial Operation Boundaries
 
 Financial writes require stricter guarantees than ordinary CRUD operations.

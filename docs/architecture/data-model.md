@@ -33,7 +33,7 @@ The proposed model contains the following core entities:
 | Entity | Purpose |
 |---|---|
 | `User` | Represents an application user and their unique username. |
-| `Wallet` | Stores the current balance for one user. |
+| `WalletAccount` | Stores the current balance for one user. |
 | `Deposit` | Records a successful virtual deposit. |
 | `Transfer` | Records a successful transfer between two wallets. |
 | `LedgerEntry` | Records an individual signed monetary effect on a wallet. |
@@ -74,7 +74,9 @@ The canonical lowercase form is what the request fingerprint uses (see `ADR-005 
 
 ## 5. Wallet
 
-The `Wallet` entity represents the current monetary state of a user's wallet.
+The C# entity class is named `WalletAccount` to avoid a name collision with the root namespace `PS.Wallet`. The database table remains `Wallets`.
+
+The `WalletAccount` entity represents the current monetary state of a user's wallet.
 
 ### Proposed attributes
 
@@ -96,7 +98,7 @@ The `Wallet` entity represents the current monetary state of a user's wallet.
 - The initial wallet balance is `0.00` and does not require a ledger entry (`DR-047`).
 - Any non-zero starting state must be accompanied by an explicit ledger entry.
 
-A unique constraint on `Wallet.UserId` enforces at most one wallet per user. The process that creates users or initializes wallets must ensure that every supported user receives a wallet, thereby enforcing the one-wallet-per-user requirement operationally.
+A unique constraint on `WalletAccount.UserId` enforces at most one wallet per user. The process that creates users or initializes wallets must ensure that every supported user receives a wallet, thereby enforcing the one-wallet-per-user requirement operationally.
 
 **Initial balance rule:** newly initialized wallets start at `0.00` with no opening ledger entry. Any non-zero starting balance must be represented by an explicit, auditable ledger entry. The reconciliation invariant (`Balance = SUM(LedgerEntry.Amount)`) holds under this rule.
 
@@ -166,10 +168,10 @@ The ledger is append-only during normal operation. Existing entries must not be 
 |---|---|---|
 | `Id` | Primary key | Ledger entry identifier. |
 | `WalletId` | Required foreign key | Wallet affected by the entry. |
-| `DepositId` | Nullable foreign key | Deposit responsible for the entry, when applicable. |
-| `TransferId` | Nullable foreign key | Transfer responsible for the entry, when applicable. |
+| `DepositId` | Nullable foreign key | Deposit responsible for the entry, when applicable. Exactly one of `DepositId` or `TransferId` is non-null. |
+| `TransferId` | Nullable foreign key | Transfer responsible for the entry, when applicable. Exactly one of `DepositId` or `TransferId` is non-null. |
 | `Amount` | `decimal(19,2)`, required | Signed monetary effect on the wallet. |
-| `CreatedAtUtc` | UTC timestamp | Time the entry was created. |
+| `CreatedAtUtc` | `datetime2(7)`, required | Time the entry was created. |
 
 ### Entry semantics
 
@@ -183,6 +185,9 @@ The signed amount is interpreted from the wallet owner's perspective:
 
 - Each entry belongs to exactly one wallet.
 - Each entry references exactly one supported financial operation: either a deposit or a transfer, but not both.
+- The database enforces the exactly-one rule with a `CHECK` constraint:
+  `(DepositId IS NOT NULL AND TransferId IS NULL) OR (DepositId IS NULL AND TransferId IS NOT NULL)`.
+- Both FKs are `ON DELETE RESTRICT`; ledger entries are never cascade-deleted.
 - A deposit has exactly one ledger entry.
 - A transfer has exactly two ledger entries.
 - A transfer's sender entry is negative and its recipient entry is positive.
@@ -190,7 +195,23 @@ The signed amount is interpreted from the wallet owner's perspective:
 - Every entry amount uses `decimal(19,2)`.
 - Ledger entries are not modified or deleted during normal application operation.
 
-The database can enforce the foreign keys and the rule that an entry references one operation rather than both. The exact strategy for enforcing the required number and signs of entries must be decided in the persistence design and verified through transactional application logic and integration tests.
+The database can enforce the foreign keys and the rule that an entry references one operation rather than both.
+
+### Cardinality Enforcement
+
+The database enforces only that each entry references exactly one operation (`DepositId` xor `TransferId`). The cardinality rules — one entry per deposit, two entries per transfer — are enforced by the application inside the same transaction that creates the operation and its entries.
+
+Reasons for application-level enforcement:
+
+- SQL Server has no declarative way to enforce "exactly N child rows per parent" without triggers.
+- Triggers are outside the MVP scope (see `ADR-006 §7` on ledger immutability and scope).
+- The transaction boundary already guarantees atomicity: if the application writes the wrong number of entries, the operation and its entries are rolled back together only if the application detects the error. Therefore the application must validate the count before committing.
+
+Integration tests must verify:
+
+- Every `Deposit` has exactly one `LedgerEntry` after commit.
+- Every `Transfer` has exactly two `LedgerEntry` rows after commit (one negative, one positive, equal magnitude).
+- A failed transaction leaves no operation without its required entries and no orphan entries.
 
 ## 9. Idempotency Record
 
@@ -237,11 +258,11 @@ The exact key length, allowed characters, request normalization, fingerprint alg
 
 The principal relationships are:
 
-- `User` 1 — 1 `Wallet`
-- `Wallet` 1 — many `Deposit`
-- `Wallet` 1 — many `LedgerEntry`
-- `Wallet` 1 — many outgoing `Transfer`
-- `Wallet` 1 — many incoming `Transfer`
+- `User` 1 — 1 `WalletAccount`
+- `WalletAccount` 1 — many `Deposit`
+- `WalletAccount` 1 — many `LedgerEntry`
+- `WalletAccount` 1 — many outgoing `Transfer`
+- `WalletAccount` 1 — many incoming `Transfer`
 - `Deposit` 1 — 1 `LedgerEntry`
 - `Transfer` 1 — 2 `LedgerEntry`
 - `User` 1 — many `IdempotencyRecord`
@@ -284,16 +305,34 @@ The database design should include, where applicable:
 
 - Primary keys for every entity.
 - Foreign keys for all entity relationships.
-- A unique constraint on `Wallet.UserId`.
+- A unique constraint on `WalletAccount.UserId`.
 - A unique constraint on `User.Username`.
 - A unique constraint on the idempotency scope.
 - Check constraints preventing negative wallet balances and balances above the maximum.
 - Check constraints for positive deposit and transfer amounts.
 - A constraint preventing a transfer from referencing the same wallet as both sender and recipient.
-- A constraint ensuring a ledger entry references exactly one supported operation.
+- A `CHECK` constraint ensuring a ledger entry references exactly one supported operation (`DepositId` xor `TransferId`).
+- FK indexes on `LedgerEntry.WalletId`, `LedgerEntry.DepositId`, `LedgerEntry.TransferId` for query performance and FK integrity checks.
 - Appropriate indexes for wallet ownership, operation lookup, history pagination, and idempotency lookup.
 
 Database constraints should provide defense in depth. Invariants that span multiple rows, such as the complete set of ledger entries for a transfer, require deliberate transaction handling and verification.
+
+### Numeric Check Constraints
+
+The database enforces the following numeric constraints as a defense-in-depth layer behind application validation:
+
+| Table | Constraint | Purpose |
+|---|---|---|
+| `Wallets` | `Balance >= 0 AND Balance <= 1000000.00` | Prevent negative and over-limit balances |
+| `Deposits` | `Amount > 0 AND Amount <= 1000000.00` | Prevent non-positive and over-limit deposits |
+| `Transfers` | `Amount > 0 AND Amount <= 1000000.00` | Prevent non-positive and over-limit transfers |
+| `LedgerEntries` | `Amount <> 0 AND ABS(Amount) <= 1000000.00` | Prevent zero and over-limit ledger entries |
+
+The following invariants are **not** enforced by `CHECK` constraints:
+
+- **"At most 2 fractional digits":** `decimal(19,2)` rounds silently. The application must reject invalid input before persistence (see `ADR-002 §3`, `DR-003`).
+- **"Recipient balance after credit <= 1000000.00":** cross-row and time-sensitive. Enforced by conditional `UPDATE` inside the transaction (see `ADR-004 §3`).
+- **"Sum of transfer ledger entries == 0":** cross-row. Enforced by application logic and verified by integration tests.
 
 ## 14. Transaction History
 
@@ -321,8 +360,6 @@ The following items require confirmation or more detailed design:
 - Exact SQL types and timestamp precision for UTC timestamps.
 - Username normalization and case-sensitivity rules.
 - Exact idempotency schema, response serialization, and retention policy.
-- Whether operation references in ledger entries use two nullable foreign keys or another relational representation.
-- The implementation strategy for enforcing complete ledger-entry sets.
 - The migration and deployment approach for schema changes.
 - Whether audit metadata beyond financial records is required for the MVP.
 

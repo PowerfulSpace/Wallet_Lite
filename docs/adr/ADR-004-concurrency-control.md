@@ -172,6 +172,25 @@ A retry must:
 
 Instead, the operation returns `503 SERVICE_UNAVAILABLE` with code `IDEMPOTENCY_IN_PROGRESS`. The idempotency record remains `InProgress`. A client retry with the same key triggers the bounded wait and on-demand recovery defined in `ADR-005 §9`. Only after durable state confirms either rollback or commit does the record transition to `Completed` or permit a safe retry.
 
+### Implementation Notes (Phase 5)
+
+`TransferTransactionExecutor` implements the retry above:
+
+- A retry is attempted only for SQL error `1205`, detected either as a direct `SqlException` or as a `DbUpdateException` whose inner exception is a `SqlException` with `Number == 1205`.
+- At most `CONST-017` (3) retries follow the initial attempt; the delay is `CONST-018` (100 ms) × `CONST-019` (×2) per attempt with `CONST-020` (±20%) jitter.
+- Before each retry the EF Core change tracker is cleared, and the idempotency record is re-read inside the new transaction, so no stale in-memory entity or duplicate `INSERT` is carried over. The transfer handler owns the reservation, so a retry never creates a second idempotency record or a new key.
+- The uncertain-commit rule is not automated: a failure after the transaction begins that is not a `1205` deadlock is not retried, and the reservation remains `InProgress`.
+
+### Implementation Notes (Phase 7)
+
+The uncertain-commit rule is now automated.
+
+- `DepositTransactionExecutor` and `TransferTransactionExecutor` raise `UncertainCommitException` (`src/Backend/PS.Wallet/PS.Wallet.Infrastructure/Persistence/UncertainCommitException.cs`) for any failure that occurs after the financial transaction has begun, except confirmed business failures (`ConflictException`, `ValidationAppException`, `DomainException`) and cancellation. This covers failures raised by `SaveChangesAsync` as well as `CommitAsync`: a confirmed rollback and an uncertain commit are indistinguishable to the client, and this section forbids reporting either as a plain `500`.
+- `ExceptionHandlingMiddleware` maps `UncertainCommitException` to `503 SERVICE_UNAVAILABLE` with code `IDEMPOTENCY_IN_PROGRESS`.
+- The command handlers do not catch it, so the reservation is never released on an uncertain outcome; it remains `InProgress` for the bounded wait and lease recovery in `ADR-005 §9`. The outcome is resolved by durable verification: only a persisted `Completed` idempotency record proves the commit, and an expired lease with no completed record permits the operation to be resumed and re-proved.
+- Deadlock victims remain excluded from that wrap, so the bounded retry loop above is preserved. Exhausting `CONST-017` (3) retries now ends in `UncertainCommitException` instead of `500 Internal Server Error`.
+- Verified against SQL Server by `IdempotencyRecoveryTests` (`UncertainCommit_Returns503AndLeavesRecordInProgress_ThenRecoversOnRetry`).
+
 ## 9. Error Semantics
 
 Concurrency-related failures must be translated into documented application outcomes.

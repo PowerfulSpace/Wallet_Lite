@@ -257,12 +257,10 @@ Tests involving transactions, constraints, and concurrent operations must run ag
 
 ## 13. Open Decisions
 
-1. Choose how ledger entries reference deposits and transfers while preserving referential integrity.
-2. Decide which ledger fields are required for audit and troubleshooting.
-3. Define whether reconciliation runs only in tests or also through operational diagnostics.
-4. Determine the required transaction-history response fields.
-5. Define the exact database constraints and indexes for ledger queries.
-6. Establish how future compensating operations will be represented if reversal functionality is introduced.
+1. Decide which ledger fields are required for audit and troubleshooting.
+2. Define whether reconciliation runs only in tests or also through operational diagnostics.
+3. Determine the required transaction-history response fields.
+4. Establish how future compensating operations will be represented if reversal functionality is introduced.
 
 The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
 

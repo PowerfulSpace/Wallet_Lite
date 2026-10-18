@@ -401,7 +401,50 @@ The following choices require explicit confirmation:
 
 No implementation should assume that a preliminary balance read is sufficient to prevent overspending.
 
-## 15. Related Documents
+## 15. Deposit Transaction Flow
+
+A deposit combines a pre-committed idempotency reservation with a single financial transaction:
+
+1. Resolve the user by username.
+2. Compute the request fingerprint.
+3. Check the idempotency record for `(UserId, "deposit", IdempotencyKey)`.
+4. Reserve the idempotency record (`INSERT`); the unique constraint arbitrates concurrent duplicates.
+5. Begin transaction.
+6. Conditional `UPDATE Wallets SET Balance = Balance + @Amount WHERE UserId = @UserId AND Balance + @Amount <= 1000000.00`.
+   - `0` rows affected → `BALANCE_LIMIT_EXCEEDED` → rollback → `409`.
+7. `INSERT Deposit`.
+8. `INSERT LedgerEntry` (positive).
+9. `UPDATE IdempotencyRecord` (result id, `201`, stored body).
+10. `COMMIT`.
+
+The reservation is committed before the transaction begins, so the database unique constraint—not an application-level read—arbitrates competing first requests. A `4xx` business rejection releases the reservation so the same key can be retried.
+
+## 16. Transfer Transaction Flow
+
+A transfer combines a pre-committed idempotency reservation with a single financial transaction that touches two wallets:
+
+1. Resolve the sender (authenticated principal) and recipient by username.
+2. Reject self-transfer (`409 SELF_TRANSFER`).
+3. Compute the request fingerprint.
+4. Check the idempotency record for `(UserId, "transfer", IdempotencyKey)`.
+5. Reserve the idempotency record (`INSERT`); the unique constraint arbitrates concurrent duplicates.
+6. Begin transaction (`READ COMMITTED`, `CONST-016`).
+7. Conditional `UPDATE Wallets SET Balance = Balance - @Amount WHERE Id = @SenderWalletId AND Balance >= @Amount`.
+   - `0` rows affected → `INSUFFICIENT_FUNDS` → rollback → `409`.
+8. Conditional `UPDATE Wallets SET Balance = Balance + @Amount WHERE Id = @RecipientWalletId AND Balance + @Amount <= 1000000.00`.
+   - `0` rows affected → `BALANCE_LIMIT_EXCEEDED` → rollback → `409`.
+9. `INSERT Transfer`.
+10. `INSERT LedgerEntry` (negative for the sender) and `INSERT LedgerEntry` (positive for the recipient).
+11. `UPDATE IdempotencyRecord` (transfer id, `201`, stored body).
+12. `COMMIT`.
+
+The two wallet updates are issued in ascending `Wallet.Id` order (`CONST-021`), regardless of which wallet is the sender and which is the recipient. The debit and credit predicates are still evaluated per row inside the transaction; ordering only reduces avoidable deadlocks between simultaneous transfers in opposite directions. The transfer row, ledger entries, and idempotency completion happen after the wallet updates and are not part of the lock-order rule.
+
+Because the reservation is committed before the transaction begins, the database unique constraint—not an application-level read—arbitrates competing first requests. A `4xx` business rejection releases the reservation so the same key can be retried.
+
+A residual SQL Server deadlock victim (`1205`) is retried with the bounded policy in `ADR-004 §8` (`CONST-017`–`CONST-020`): the transaction is re-executed from a clean change tracker, the existing idempotency reservation is reused, and the state is re-read inside the new transaction.
+
+## 17. Related Documents
 
 - `docs/architecture/architecture.md`
 - `docs/architecture/data-model.md`

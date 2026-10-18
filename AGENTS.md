@@ -204,7 +204,22 @@ Do not present an unresolved proposal as a finalized implementation requirement.
 
 Track unresolved questions in `docs/project/open-questions.md`.
 
-## 14. Numeric Format Convention
+### Open questions and known issues
+
+Two registers track unresolved and deferred items:
+
+- `docs/project/open-questions.md` — decisions that are not yet made. Every entry has an `OQ-NNN` ID, a priority (`P0`–`P3`), a status (`Open` / `Proposed` / `Decided` / `Deferred`), and a target phase.
+- `docs/project/known-issues.md` — accepted deviations or deferred workarounds. Every entry has a `KI-NNN` ID, a status (`Open` / `Resolved` / `Wontfix`), a `Risk`, a `Mitigation`, and a `Revisit by`.
+
+Rules:
+
+- Do not invent new IDs. Use the next sequential number.
+- Do not silently resolve an OQ or KI. Update the entry with a `Decision:` (for OQ) or `Mitigation`/`Resolved` (for KI), and update affected documents.
+- A `Decided` OQ must contain a `Decision:` line that names the implementation location (ADRs, constants, endpoints, etc.).
+- A `Resolved` KI must state what changed and where.
+- When an OQ or KI blocks a phase, reference it explicitly in the corresponding roadmap phase.
+
+## 14. Format and Naming Conventions
 
 Numeric constants appear in two forms, and the form depends on context:
 
@@ -214,6 +229,42 @@ Numeric constants appear in two forms, and the form depends on context:
 Both forms must represent the same value. When a document needs a numeric constant that is listed in `docs/project/constants.md`, reference the constant by name instead of restating the value, unless the value is required for readability in that specific document.
 
 Do not introduce a third format (e.g. `1 000 000.00`, `1_000_000.00`).
+
+### Entity vs table vs concept naming
+
+`Wallet` requires disambiguation:
+
+- `Wallet` (capital W, prose) — the business concept.
+- `WalletAccount` — the C# entity class `PS.Wallet.Domain.Entities.WalletAccount`.
+- `Wallets` — the SQL Server table name.
+- `wallet` (lowercase) — a generic instance in prose.
+
+The C# entity is `WalletAccount` because the root namespace `PS.Wallet` shadows the simple name `Wallet`. Do not introduce a C# type named `Wallet` in any `PS.Wallet.*` project.
+
+Other entities (`User`, `Deposit`, `Transfer`, `LedgerEntry`, `IdempotencyRecord`) do not have this collision and keep their natural names.
+
+### JSON serialization of monetary values
+
+Monetary `decimal` values are serialized as JSON **strings** with exactly two fractional digits (`"0.00"`, `"125.50"`, `"1000000.00"`), per `ADR-002 §9`. JSON numbers are rejected on input.
+
+The global `MoneyJsonConverter` (`src/Backend/PS.Wallet/PS.Wallet.API/Json/MoneyJsonConverter.cs`) implements this contract:
+
+- Writes `decimal` as `"0.00"` using invariant culture.
+- Reads only JSON strings; a JSON number raises `JsonException`.
+
+Register the converter for **both** JSON pipelines. `ConfigureHttpJsonOptions` affects `WriteAsJsonAsync` and minimal APIs; it does **not** affect MVC controllers. Register it in both places:
+
+```csharp
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new MoneyJsonConverter()));
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new MoneyJsonConverter()));
+```
+
+Do not introduce per-property `[JsonConverter]` attributes on DTOs. The converter is global.
+
+Integration tests that deserialize API responses must use `HttpClient.ReadFromJsonAsync<T>` or `JsonSerializerDefaults.Web`, which include `NumberHandling = AllowReadingFromString` and therefore accept monetary values as strings. Tests must not use raw `JsonSerializer.Deserialize` without those options for monetary DTOs.
 
 ## 15. Phase 1 Build Infrastructure
 

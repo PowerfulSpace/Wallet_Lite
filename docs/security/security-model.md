@@ -67,6 +67,8 @@ Requirements:
 - Username normalization and uniqueness rules must be defined consistently.
 - Internal user and wallet identifiers must not be treated as authentication credentials.
 
+In the MVP, the development authentication handler resolves the username from `X-Test-User` and places it in the principal. `ICurrentUser` exposes the username; application handlers resolve the internal user by username. Production authentication must follow the same principle: the verified principal determines the username, and the application resolves the internal user.
+
 ## 5. Authorization Rules
 
 Authorization must be enforced server-side for every request.

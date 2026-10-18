@@ -138,6 +138,8 @@ The implementation must decide which response details are stored, such as:
 
 The replay contract must be documented consistently for deposits and transfers.
 
+For deposits, a successful response is `201 Created` with `Location: /api/v1/wallet/deposits/{depositId}` and a JSON body. The `Location` value and the body are part of the stored replay contract: a replay of a successful request returns the same status, `Location`, and body (`OQ-018` Decided; see `docs/api/endpoints.md §5`).
+
 Transport-specific metadata, such as a new request trace identifier, may differ between attempts when appropriate. It must not change the underlying financial result.
 
 ## 8. Reusing a Key with a Different Request
@@ -182,6 +184,19 @@ The behavior when a duplicate arrives while the first request is still executing
 
 No background recovery service exists. Recovery is on-demand, triggered by a retry for the same key after the lease has expired.
 
+### Implementation Notes (Phase 7)
+
+`IdempotencyCoordinator` (`src/Backend/PS.Wallet/PS.Wallet.Infrastructure/Persistence/IdempotencyCoordinator.cs`) owns the policy above for both financial commands. `CreateDepositCommandHandler` and `CreateTransferCommandHandler` delegate to `IIdempotencyCoordinator` and no longer read or write idempotency records directly.
+
+- The lease is persisted as `IdempotencyRecord.LeaseExpiresAtUtc` (`datetime2(7)`, NOT NULL, migration `20261018130511_AddIdempotencyLease`, column default `2026-01-01T00:00:00`). Any record whose lease is in the past is treated as expired, so a stale `InProgress` record created before the lease existed is recoverable instead of blocking its key permanently.
+- Reservation is a raw `INSERT` whose uniqueness is arbitrated by the `(UserId, OperationType, IdempotencyKey)` unique index. A duplicate-key violation (SQL error `2601`/`2627`) is an expected concurrency outcome, not an error.
+- Bounded wait: a matching `InProgress` record with a live lease is re-read every `CONST-014` (100 ms) for at most `CONST-011` (3 s), then the request returns `503 IDEMPOTENCY_IN_PROGRESS`.
+- Recovery: an expired lease is claimed with `UPDATE IdempotencyRecords SET LeaseExpiresAtUtc = @newLease WHERE Id = @id AND ResponseStatusCode IS NULL AND LeaseExpiresAtUtc < @now`. Exactly one request wins (one affected row) and resumes the operation under the claimed lease; every other request keeps waiting or returns `503`.
+- Completion is guarded (`WHERE Id = @id AND ResponseStatusCode IS NULL`) and is executed inside the financial transaction by the transaction executors, so the replayable result and the financial effect commit atomically (§6, `ADR-004 §4`). The command handler repeats the same guarded call after the executor returns; it affects no rows and confirms the documented call order.
+- A fingerprint mismatch is evaluated before lease state, so `409 IDEMPOTENCY_KEY_REUSED` is returned immediately in every case, including while a request is `InProgress`.
+- Only a `4xx` business rejection releases the reservation (`CONST-015`). `5xx` and uncertain outcomes leave the record `InProgress` (`ADR-004 §8`).
+- A failure after the financial transaction has begun is raised as `UncertainCommitException` (`src/Backend/PS.Wallet/PS.Wallet.Infrastructure/Persistence/UncertainCommitException.cs`) and surfaced as `503 IDEMPOTENCY_IN_PROGRESS`; the reservation is neither released nor marked completed, because the durable state does not yet prove rollback or commit. A retry with the same key resolves the outcome through the bounded wait or, once the lease expires, through on-demand recovery.
+
 ## 10. Failed Requests and Retryability
 
 The initial policy is that failed financial operations must not permanently reserve a key in a way that prevents a valid retry.
@@ -201,7 +216,7 @@ The MVP policy distinguishes three outcome classes:
 
 | Outcome class | Persisted as replayable? | Idempotency record final state |
 |---|---|---|
-| `2xx` success | Yes | `Completed` |
+| `2xx` success | Yes | `Completed`; retained for `CONST-029` (`24` hours) |
 | `4xx` business rejection (validation, insufficient funds, balance limit, self-transfer, idempotency key reuse) | No | Record is deleted after the response is returned, or left to expire per `CONST-015`; the key is released for a fresh attempt |
 | `5xx` unexpected / uncertain commit | No | Remains `InProgress`; resolved by on-demand recovery after the lease expires |
 
@@ -239,18 +254,9 @@ The implementation must avoid storing unnecessary sensitive information in repla
 
 ## 12. Retention
 
-The idempotency retention period has not yet been finalized.
+A successful (`2xx`) idempotency record is retained for `CONST-029` (`24` hours) (`OQ-010` Decided). Deleting a record while a client may legitimately retry its original request can permit duplicate execution, so the retention window must exceed any supported client retry window.
 
-The chosen policy must balance:
-
-- Protection against duplicate financial effects.
-- Storage growth.
-- Client retry expectations.
-- Audit and operational requirements.
-
-Deleting an idempotency record while a client may legitimately retry its original request can permit duplicate execution. Any retention policy must explicitly account for that risk.
-
-The MVP must document its retention behavior before the feature is considered complete.
+`4xx` business rejections are released immediately (`CONST-015`), and `5xx` uncertain outcomes remain `InProgress` until on-demand recovery resolves them. Physical cleanup of expired records and any long-term storage growth control are deferred beyond the MVP (Phase 7).
 
 ## 13. Security and Observability
 
@@ -325,12 +331,19 @@ Not selected as the default because the MVP requires valid retries after retryab
 
 ## 17. Open Decisions
 
-1. Exact response fields persisted for replay. (tracked in OQ-018)
-2. Retention period and cleanup strategy. (tracked in OQ-010)
+1. Exact response fields persisted for replay. (resolved in OQ-018)
+2. Retention period and cleanup strategy. (retention resolved in OQ-010 / `CONST-029`; cleanup deferred to Phase 7)
 3. Exact conflict and retryable error codes.
-4. Whether response replay includes the original `Location` header. (tracked in OQ-018)
+4. Whether response replay includes the original `Location` header. (resolved in OQ-018)
 
 The remaining items are deferred beyond the MVP and tracked in `docs/project/known-issues.md` where they represent accepted deviations, or remain open in this section until resolved.
+
+### Resolved during Phase 4
+
+- **IdempotencyRecord location:** The `IdempotencyRecord` entity is placed in `PS.Wallet.Domain.Entities`, not in `PS.Wallet.Infrastructure.Persistence.Entities`. Reason: the Application layer needs to query and update idempotency records, and Application must not reference Infrastructure. The table name (`IdempotencyRecords`), columns, and constraints are unchanged. See `docs/architecture/data-model.md §9`.
+- **Response fields and Location header (`OQ-018`):** Resolved. See `docs/api/endpoints.md §5`.
+- **Retention (`OQ-010`):** Resolved. See `CONST-029` and `§10`.
+- **Bounded wait and on-demand lease recovery (`§9`):** Not implemented in Phase 4. A matching in-progress request returns `503 IDEMPOTENCY_IN_PROGRESS` immediately. Tracked as `KI-003` in `docs/project/known-issues.md`.
 
 ## 18. References
 

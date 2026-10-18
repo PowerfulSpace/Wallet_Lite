@@ -254,22 +254,115 @@ Tests MUST verify financial state, not just HTTP response codes.
 
 For successful transfers, verification should include both wallet balances, the transfer record, both ledger entries, and the persisted idempotency result.
 
-## 13. Open Decisions
+## 13. Reconciliation Procedure
+
+Reconciliation compares the stored wallet balance with the wallet's ledger entries and reports every wallet where the two disagree. It is a read-only verification step; it never repairs data (`OQ-030` Decided).
+
+### 13.1 Invariant
+
+For every wallet, `Wallet.Balance` must equal the sum of that wallet's ledger entry amounts. Ledger amounts are signed: a deposit and a transfer credit are positive, a transfer debit is negative.
+
+This invariant holds only under the approved initialization model (`OQ-001`): a new wallet starts at `0.00` and has no opening ledger entry. Any non-zero starting state or approved adjustment must be represented by an explicit ledger entry; otherwise reconciliation is not valid for that wallet (`ADR-006 §5`).
+
+### 13.2 Checks
+
+The following SQL queries verify the financial invariants after an incident or on a schedule. Each returns the rows that fail; an empty result set is a clean check.
+
+1. **Wallet balances are non-negative and within the limit** (`CONST-001`).
+
+```sql
+SELECT Id, Balance
+FROM Wallets
+WHERE Balance < 0 OR Balance > 1000000.00;
+```
+
+2. **Ledger sum matches the wallet balance.**
+
+```sql
+SELECT w.Id, w.Balance, COALESCE(SUM(l.Amount), 0) AS LedgerSum
+FROM Wallets AS w
+LEFT JOIN LedgerEntries AS l ON l.WalletId = w.Id
+GROUP BY w.Id, w.Balance
+HAVING w.Balance <> COALESCE(SUM(l.Amount), 0);
+```
+
+3. **Every deposit has exactly one ledger entry.**
+
+```sql
+SELECT d.Id
+FROM Deposits AS d
+LEFT JOIN LedgerEntries AS l ON l.DepositId = d.Id
+GROUP BY d.Id
+HAVING COUNT(l.Id) <> 1;
+```
+
+4. **Every transfer has exactly two ledger entries with equal magnitude, opposite signs, and a net `0.00`** (`ADR-006 §4`).
+
+```sql
+SELECT t.Id
+FROM Transfers AS t
+LEFT JOIN LedgerEntries AS l ON l.TransferId = t.Id
+GROUP BY t.Id, t.Amount
+HAVING COUNT(l.Id) <> 2
+   OR SUM(CASE WHEN l.Amount < 0 THEN -l.Amount ELSE l.Amount END) <> 2 * t.Amount
+   OR SUM(l.Amount) <> 0;
+```
+
+5. **No duplicate ledger entries.**
+
+```sql
+SELECT DepositId, COUNT(*) FROM LedgerEntries WHERE DepositId IS NOT NULL GROUP BY DepositId HAVING COUNT(*) <> 1;
+SELECT TransferId, COUNT(*) FROM LedgerEntries WHERE TransferId IS NOT NULL GROUP BY TransferId HAVING COUNT(*) <> 2;
+```
+
+6. **Idempotency coverage.** Every `Completed` idempotency record corresponds to a committed operation, and no logical request produced two financial effects (`ADR-005`). This check is performed by inspecting `IdempotencyRecords` against the operation tables rather than by a single query.
+
+### 13.3 Reporting
+
+Each run records:
+
+- The UTC timestamp of the run (`CONST-026`) and the database it ran against.
+- The number of wallets checked.
+- Every failing row: wallet identifier, stored balance, ledger sum, delta, and the failing check.
+- The offending identifiers for operation-level and ledger-level checks (operation identifiers, ledger entry identifiers).
+- The exact query or commit used, so the result can be reproduced.
+
+A run with no failing rows is reported as clean. A run with failing rows is an incident: it is recorded per §9, investigated to a root cause before any corrective change, and never resolved by updating `Wallets.Balance` or `LedgerEntries` directly (§9, §11).
+
+Because balances and ledger entries are read while the application may still be processing requests, a mismatch reported for a wallet with an in-flight operation MUST be re-checked after the operation settles before it is treated as a real discrepancy. A reconciliation of a running system is a diagnostic, not a proof.
+
+### 13.4 Cadence
+
+Reconciliation is performed:
+
+- After any suspected inconsistency (§9).
+- Before declaring recovery from an incident complete (§8).
+- After any authorized corrective action.
+- Periodically, as an operational diagnostic, once operational tooling exists.
+
+### 13.5 Implementation Status
+
+No automated reconciliation endpoint exists in the MVP. These queries are run manually by an operator after an incident or as a scheduled operational check (Phase 8+), and the same invariants are covered by SQL Server integration tests (`tests/PS.Wallet.IntegrationTests`). Automated reconciliation tooling, scheduling, and alerting depend on the hosting, RPO/RTO, and observability decisions (`OQ-027`, `OQ-028`, `OQ-029`).
+
+## 14. Open Decisions
 
 The following decisions remain open:
 
 1. What retry limits and delay policy will be used for transient database failures?
 2. Which SQL Server errors will be treated as retryable?
-3. How will uncertain transaction outcomes be resolved in the idempotency implementation?
-4. What are the target RPO and RTO?
-5. Which backup and restore strategy will be used in Production?
-6. How will reconciliation be executed and reported?
-7. What is the authorized process for compensating financial transactions?
-8. Under what conditions should financial endpoints be disabled during recovery?
+3. What are the target RPO and RTO?
+4. Which backup and restore strategy will be used in Production?
+5. What is the authorized process for compensating financial transactions?
+6. Under what conditions should financial endpoints be disabled during recovery?
 
 These decisions should be finalized before production deployment or before implementing the corresponding operational capabilities.
 
-## 14. Related Documents
+Resolved decisions related to this document:
+
+- Uncertain transaction outcomes in the idempotency implementation (`OQ-011` Decided): `ADR-004 §8`, `ADR-005 §9`, and §4.2.
+- Reconciliation execution and reporting (`OQ-030` Decided): §13.
+
+## 15. Related Documents
 
 - `docs/operations/configuration.md`
 - `docs/operations/observability.md`

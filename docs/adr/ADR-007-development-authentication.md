@@ -59,6 +59,14 @@ The implementation must ensure that:
 
 The exact header format and authentication-handler implementation must be documented in the setup guide once selected.
 
+## 4.1 Identity Mapping
+
+The development authentication handler produces a `ClaimsPrincipal` with a `Name` claim equal to the canonical lowercase username (`alice` or `bob`).
+
+`ICurrentUser` (Application) exposes `Username`. Application handlers resolve the internal `UserId` by querying `Users` by `Username`.
+
+This keeps the authentication mechanism independent of the database: the handler does not need a `DbContext`, and the application layer owns the mapping from authenticated identity to persisted user.
+
 ## 5. Environment Isolation
 
 Development authentication must be explicitly environment-restricted.

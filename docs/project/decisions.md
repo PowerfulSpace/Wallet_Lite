@@ -63,7 +63,7 @@ A deposit creates one positive ledger entry. A transfer creates two entries of e
 
 Normal application operations must not edit or delete historical ledger entries. Corrections should use compensating transactions.
 
-**Open considerations:** Ledger reference model, ledger fields for audit, reconciliation execution, transaction-history response fields, and database constraints/indexes (see `ADR-006 §13`). Initial balance is resolved (`DR-047`, `OQ-001`).
+**Open considerations:** Ledger fields for audit, reconciliation execution, and transaction-history response fields (see `ADR-006 §13`). Initial balance (`DR-047`, `OQ-001`), ledger reference model (`OQ-003`, `CONST-027`), and database constraints/indexes (`OQ-005`) are resolved.
 
 **Status note:** MVP scope; remaining open decisions in `ADR-006 §13`.
 

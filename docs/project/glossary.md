@@ -19,6 +19,17 @@ A virtual account associated with one user that holds a USD-denominated balance.
 
 A wallet is an internal application concept and is not a bank account or a real-money payment instrument.
 
+**Naming convention within this project:**
+
+| Form | Meaning | Example |
+|---|---|---|
+| `Wallet` (capital W, prose) | The business concept of a user's virtual account. | "A wallet holds a USD balance." |
+| `WalletAccount` | The C# entity class `PS.Wallet.Domain.Entities.WalletAccount`. | `DbSet<WalletAccount> Wallets` |
+| `Wallets` | The SQL Server table name. | `SELECT * FROM Wallets` |
+| `wallet` (lowercase) | A generic instance in prose. | "the sender's wallet" |
+
+The C# entity is named `WalletAccount` rather than `Wallet` because the root namespace `PS.Wallet` shadows the simple name `Wallet` inside the `PS.Wallet.*` projects. See `docs/architecture/data-model.md §5`.
+
 ### User
 
 An application identity associated with a wallet.

@@ -26,7 +26,7 @@ Install the following tools:
 |---|---|
 | .NET 10 SDK | Build and run the application |
 | Git | Source control |
-| SQL Server | Relational database |
+| SQL Server (local installation) | Relational database. Docker is optional; see §5. |
 | SQL Server Management Studio, Azure Data Studio, or another SQL client | Inspect and manage the database |
 | IDE or editor | Develop and debug the application |
 
@@ -166,17 +166,21 @@ Entity Framework Core migrations define the database schema.
 
 After the database is available and the connection string is configured, apply migrations using the repository's documented approach.
 
-For example, if the required EF Core tools and project structure are configured:
-
 ```bash
+dotnet ef migrations add <Name> \
+  --project src/Backend/PS.Wallet/PS.Wallet.Infrastructure \
+  --startup-project src/Backend/PS.Wallet/PS.Wallet.API
+
 dotnet ef database update \
   --project src/Backend/PS.Wallet/PS.Wallet.Infrastructure \
   --startup-project src/Backend/PS.Wallet/PS.Wallet.API
 ```
 
-Replace the placeholders with the actual project paths.
-
 If the EF Core command-line tool is not installed, install or invoke the version compatible with the repository's EF Core packages.
+
+### Design-time connection string
+
+The design-time factory reads `WALLET_DB` from the environment. If unset, it falls back to `Server=localhost;Database=Wallet;Trusted_Connection=True;TrustServerCertificate=True;`. Set `WALLET_DB` before running `dotnet ef` commands to target a specific database.
 
 ### Database Initialization
 
@@ -248,11 +252,18 @@ The test suite should include:
 
 Integration tests that verify database behavior must use an actual SQL Server instance compatible with the application.
 
+The MVP uses a **local SQL Server installation** (same as development). Docker is optional. The test database:
+
+- Must be a **separate database** from the development database. Suggested name: `Wallet_Test`.
+- Must be configured via the `WALLET_TEST_DB` environment variable.
+- Must be created and migrated automatically by the test setup, or by a documented `dotnet ef database update` step against the test connection string.
+- Must never point to a production database.
+
 EF Core's InMemory provider is not a substitute for testing SQL Server transactions, locking, uniqueness constraints, or concurrent updates.
 
-Use a separate test database and ensure the test setup does not connect to a production database.
-
 Tests should clean up their data or use isolated database state so results are repeatable.
+
+**Phase 2 note:** Phase 2 introduces only domain unit tests and EF Core mappings. SQL Server-backed integration tests begin in Phase 4 (deposits) and Phase 5 (transfers). The `WALLET_TEST_DB` environment variable and the `Wallet_Test` database are provisioned before Phase 4.
 
 ## 10. Local Development Workflow
 
@@ -342,3 +353,18 @@ Vite proxies /api to the backend at http://localhost:5254.
 The backend must be running for API calls to succeed.
 
 The frontend currently contains placeholder views and no business functionality.
+
+## 15. Development Authentication
+
+In Development, protected endpoints require the `X-Test-User` header with one of:
+
+- `alice`
+- `bob`
+
+Example:
+
+```bash
+curl -H "X-Test-User: alice" http://localhost:5254/api/v1/wallet
+```
+
+Missing or unknown values return `401 Unauthorized`. The development authentication handler is registered only when `ASPNETCORE_ENVIRONMENT=Development`. In other environments, the application fails to start unless a production authentication handler is configured.

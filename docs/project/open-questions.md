@@ -72,7 +72,7 @@ The decision must define:
 ### OQ-003 — Ledger Reference Model
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/architecture/data-model.md`, `docs/adr/ADR-006-ledger-model.md`
 
@@ -82,10 +82,12 @@ The implementation must preserve referential integrity and make it possible to d
 
 **Decision required:** Select a schema that enforces valid operation references and supports reliable reconciliation.
 
+**Decision:** Two nullable FKs (`DepositId`, `TransferId`) with a `CHECK` constraint enforcing exactly one non-null. Both FKs `ON DELETE RESTRICT`. See `data-model.md §8`, §13.
+
 ### OQ-004 — Ledger Cardinality Enforcement
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/architecture/data-model.md`, `docs/requirements/domain-rules.md`
 
@@ -98,10 +100,12 @@ Expected behavior:
 
 The design must distinguish constraints enforceable directly by SQL Server from invariants that require transactional application logic and verification.
 
+**Decision:** Database enforces only "exactly one operation reference" (`CHECK`, `CONST-027`). Cardinality (1 per deposit, 2 per transfer) is enforced by the application in the same transaction, validated before commit, and verified by integration tests. See `data-model.md §8 Cardinality Enforcement`.
+
 ### OQ-005 — Database Numeric Constraints
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 2 — Domain and Persistence  
 **Related:** `docs/adr/ADR-002-money-and-precision.md`, `docs/architecture/data-model.md`
 
@@ -110,6 +114,8 @@ Which monetary rules will be enforced through database constraints in addition t
 The design must consider positive operation amounts, supported precision, valid balance ranges, and non-negative wallet balances.
 
 **Resolution path:** Values for monetary precision and limits are registered in `docs/project/constants.md` as `CONST-001`–`CONST-004`. This OQ remains open only for the **enforcement mechanism** (database CHECK constraints vs application-only), not for the values themselves.
+
+**Decision:** The database enforces `Balance >= 0 AND Balance <= 1000000.00`, `Amount > 0 AND Amount <= 1000000.00` for deposits/transfers, and `Amount <> 0 AND ABS(Amount) <= 1000000.00` for ledger entries, all as `CHECK` constraints. Precision ("at most 2 fractional digits") and cross-row invariants ("recipient balance limit", "sum == 0") remain application-level. See `data-model.md §13 Numeric Check Constraints`.
 
 ## 5. Financial Transactions and Concurrency
 
@@ -178,13 +184,15 @@ The policy must distinguish validation failures, business-rule failures, transie
 ### OQ-010 — Idempotency Retention
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/adr/ADR-005-idempotency.md`, `docs/architecture/data-model.md`
 
 How long must successful idempotency records remain available?
 
 The retention policy must account for client retry windows and the risk of a previously used key producing a second financial effect after its record is deleted.
+
+**Decision:** Successful (`2xx`) idempotency records are retained for `CONST-029` (`24` hours). `4xx` business rejections are not retained (`CONST-015`; the key is released immediately). `5xx` uncertain outcomes remain `InProgress` until resolved by on-demand lease recovery. Physical cleanup of expired records is deferred to Phase 7.
 
 **Cross-reference:** Tracked as `ADR-005 §17` item "Retention period and cleanup strategy".
 
@@ -290,13 +298,15 @@ The fingerprint must distinguish materially different logical operations while a
 ### OQ-018 — Response Fields and Location Headers
 
 **Priority:** P2  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 4 — Deposits  
 **Related:** `docs/api/endpoints.md`, `docs/api/api-guidelines.md`
 
 Which response fields and headers will be standardized for successful deposits and transfers?
 
 The contract should specify operation identifiers, relevant timestamps, resulting balance information if included, and whether a `Location` header is returned.
+
+**Decision:** A successful deposit returns `201 Created` with a `Location` header of `/api/v1/wallet/deposits/{depositId}` and a body of `{ depositId, walletId, amount, currency, balanceAfter, createdAtUtc }`. A replay of a successful request returns the same status, `Location`, and body. See `docs/api/endpoints.md §5`.
 
 **Cross-reference:** Tracked as `ADR-005 §17` items "Exact response fields persisted for replay" and "Whether response replay includes the original `Location` header".
 
@@ -344,13 +354,15 @@ Development-only authentication must remain unavailable in Production. The MVP m
 ### OQ-022 — User Identity Mapping
 
 **Priority:** P1  
-**Status:** Proposed  
+**Status:** Decided  
 **Resolve by:** Phase 3 — Wallet Query and Identity  
 **Related:** `docs/security/security-model.md`, `docs/architecture/data-model.md`
 
 How will the authenticated principal map to an internal user record?
 
 The mapping must use a stable identity and must not rely on a client-supplied user or sender identifier.
+
+**Decision:** The development authentication handler resolves a `Username` from the `X-Test-User` header (`alice` or `bob`). `ICurrentUser` exposes `Username`. Application handlers resolve `UserId` by querying `Users` by `Username`. Production authentication must resolve `Username` from a verified principal. See `ADR-007 §4.1` and `docs/security/security-model.md §4`.
 
 ### OQ-023 — Rate Limiting
 
@@ -392,15 +404,15 @@ The minimum quality gates must be defined even if the specific CI provider remai
 ### OQ-026 — Integration Test Environment
 
 **Priority:** P1  
-**Status:** Proposed  
-**Resolve by:** Deferred to implementation; Phase 1 creates the test project scaffolding but does not provision a SQL Server test environment.  
+**Status:** Decided  
+**Resolve by:** Phase 4 (SQL Server-backed tests).  
 **Related:** `docs/development/testing.md`, `docs/development/setup.md`
 
 How will SQL Server be provisioned for automated integration tests?
 
 The solution must support repeatable tests against real SQL Server behavior, including transactions, constraints, and concurrency.
 
-**Phase 1 note:** The `Wallet.IntegrationTests` project is created in Phase 1 but contains no SQL Server-dependent tests. Test environment provisioning is resolved before Phase 2.
+**Decision:** Local SQL Server installation (Docker optional). Separate `Wallet_Test` database. Connection string from `WALLET_TEST_DB` environment variable. Phase 2 uses unit tests only; integration tests begin in Phase 4. See `setup.md §9 Integration Test Database`.
 
 ## 9. Operations and Recovery
 
@@ -440,13 +452,15 @@ The MVP should retain safe structured logging and correlation even if a full mon
 ### OQ-030 — Reconciliation Procedure
 
 **Priority:** P1  
-**Status:** Open  
+**Status:** Decided  
 **Resolve by:** Phase 7 — Reliability and Verification  
 **Related:** `docs/operations/recovery.md`, `docs/architecture/data-model.md`
 
 How will wallet balances be compared with ledger entries, and how will discrepancies be reported?
 
 The procedure must reflect the approved initialization model and any legitimate adjustment records.
+
+**Decision:** No reconciliation endpoint exists in the MVP. Reconciliation is an operational procedure: operators run the documented SQL checks (`docs/operations/recovery.md §13`, Reconciliation Procedure) manually or via a scheduled job from Phase 8+. The checks compare the stored wallet balance with the ledger under the approved initialization model (`OQ-001`: zero initial balance, no opening ledger entry) and treat an explicitly approved adjustment entry as part of the ledger; discrepancies are reported per `recovery.md §13.3` and never repaired by direct balance or ledger edits. See `ADR-006 §5` (Balance Reconciliation) and `ADR-006 §11`.
 
 ## 10. Product and Scope
 
@@ -502,22 +516,16 @@ If an item is intentionally postponed, record the reason and the milestone by wh
 
 All P0 blocking decisions for the MVP are resolved. P1 decisions that are not yet Decided are listed below and must be resolved before the corresponding implementation phase. The following items remain open but are **not blocking** for the start of implementation:
 
-- OQ-003 — Ledger reference model (P1; Phase 2).
-- OQ-004 — Ledger cardinality enforcement (P1; Phase 2).
-- OQ-005 — Database numeric constraints enforcement mechanism (P1; Phase 2).
-- OQ-022 — User identity mapping (P1; Phase 3).
-- OQ-010 — Idempotency retention (needed before Phase 4 hardening, not before first deposit).
-- OQ-018 — Response fields and `Location` header behavior (needed before Phase 4, but the contract defaults are workable).
 - OQ-021 — Production authentication (Deferred; not part of MVP).
 - OQ-023 — Rate limiting (P2; not part of MVP).
 - OQ-024 — Performance targets (Deferred; see `NFR-012`).
-- OQ-027, OQ-028, OQ-029, OQ-030 — Hosting, RPO/RTO, observability stack, reconciliation procedure (P2/Deferred).
+- OQ-027, OQ-028, OQ-029 — Hosting, RPO/RTO, observability stack (P2/Deferred).
 - OQ-031 — Frontend scope (Deferred; frontend out of MVP).
 - OQ-033 — MVP release criteria (P1; defined at Phase 8, not before).
 
 Resolved blocking decisions (for reference):
 
-- OQ-001, OQ-002, OQ-006, OQ-007, OQ-008, OQ-009, OQ-011, OQ-012, OQ-013, OQ-014, OQ-015, OQ-016, OQ-017, OQ-019, OQ-020, OQ-032.
+- OQ-001, OQ-002, OQ-003, OQ-004, OQ-005, OQ-006, OQ-007, OQ-008, OQ-009, OQ-010, OQ-011, OQ-012, OQ-013, OQ-014, OQ-015, OQ-016, OQ-017, OQ-018, OQ-019, OQ-020, OQ-022, OQ-026, OQ-030, OQ-032.
 
 ## 13. Related Documents
 

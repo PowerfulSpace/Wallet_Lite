@@ -22,6 +22,8 @@ General HTTP conventions, error responses, money representation, idempotency, an
 
 All endpoints except development-only authentication mechanisms require an authenticated user. No endpoint accepts a client-supplied sender ID as the source of authorization.
 
+Monetary values in JSON are strings with exactly two fractional digits (e.g. `"25.00"`). The API rejects JSON numbers for monetary fields. See `ADR-002 §9`.
+
 ## 3. GET /api/v1/wallet
 
 ### Purpose
@@ -61,6 +63,7 @@ The identifiers and timestamp above are illustrative.
 ### Error Responses
 
 - `401 Unauthorized` — authentication is missing or invalid.
+- `404 Not Found` — the authenticated principal cannot be mapped to an application user or wallet, returned as `ProblemDetails` with `code` `RESOURCE_NOT_FOUND`.
 - `500 Internal Server Error` — unexpected server failure.
 
 ## 4. GET /api/v1/wallet/transactions
@@ -140,13 +143,13 @@ All IDs, amounts, timestamps, and cursor values are illustrative.
 - Pagination uses a stable composite ordering based on `(CreatedAtUtc, Id)`.
 - The cursor is opaque to clients and must be treated as an unmodified string.
 - Cursor encoding: `base64(JSON { createdAtUtc: ISO8601, id: GUID })` (`CONST-010`). The JSON uses invariant culture and UTC.
-- The cursor must be validated before use. A malformed or undecodable cursor returns `400 VALIDATION_ERROR` with code `INVALID_CURSOR`.
+- The cursor must be validated before use. A malformed or undecodable cursor returns `400 Bad Request` with error code `INVALID_CURSOR`.
 - The ordering tuple is `(CreatedAtUtc DESC, Id DESC)`. The cursor encodes the last item of the previous page, and the query uses `WHERE (CreatedAtUtc, Id) < (cursor.CreatedAtUtc, cursor.Id)`.
 - New entries created between page requests appear as additional items in earlier pages (newest-first order); they do not shift already-returned items.
 
 ### Error Responses
 
-- `400 Bad Request` — invalid cursor or invalid pagination parameters.
+- `400 Bad Request` — invalid pagination parameters (`VALIDATION_ERROR`), or a malformed or undecodable cursor (`INVALID_CURSOR`).
 - `401 Unauthorized` — authentication is missing or invalid.
 - `500 Internal Server Error` — unexpected server failure.
 
@@ -203,6 +206,12 @@ The target wallet is determined from the authenticated user's identity.
 
 The values are illustrative.
 
+The response also includes a `Location` header:
+
+```text
+Location: /api/v1/wallet/deposits/3c8a1f52-1e2b-4a77-9c4b-8b2d5e100002
+```
+
 ### Atomicity Requirements
 
 The following changes must commit together in one database transaction:
@@ -216,7 +225,7 @@ If any required step fails, the financial changes must be rolled back.
 
 ### Idempotency Behavior
 
-- The same key and equivalent request must replay the original successful response without creating another deposit.
+- The same key and equivalent request must replay the original successful response without creating another deposit. The replay returns the same `201 Created` status, the same `Location` header, and the same response body as the original request.
 - Reusing the same key with a different request payload must return `409 Conflict`.
 - Concurrent requests using the same key must not produce duplicate deposits.
 - A business rejection (`400`, `409`) does **not** permanently block the key: the same key and same payload may be retried later and will be re-validated against the current state.
@@ -228,6 +237,35 @@ If any required step fails, the financial changes must be rolled back.
 - `401 Unauthorized` — authentication is missing or invalid.
 - `409 Conflict` — balance limit exceeded or idempotency key reused with a different payload.
 - `500 Internal Server Error` — unexpected server failure.
+
+## 5.1. GET /api/v1/wallet/deposits/{id}
+
+### Purpose
+
+Return a single deposit belonging to the authenticated user's wallet.
+
+### Authentication
+
+Required. The deposit must belong to the authenticated user's wallet.
+
+### Request
+
+Path parameter:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | UUID | Deposit identifier |
+
+### Success Response — `200 OK`
+
+Body: same as the create-deposit response (`DepositDto`).
+
+The `Location` header returned by `POST /api/v1/wallet/deposits` points to this endpoint.
+
+### Error Responses
+
+- `404 Not Found` — deposit does not exist or does not belong to the authenticated user, with code `RESOURCE_NOT_FOUND`.
+- `401 Unauthorized` — authentication is missing or invalid.
 
 ## 6. POST /api/v1/transfers
 
@@ -286,6 +324,12 @@ The sender is always derived from the authenticated principal. A sender ID in th
 
 The values are illustrative.
 
+The response also includes a `Location` header pointing at the retrievable transfer resource:
+
+```text
+Location: /api/v1/transfers/6b13bfc7-08e8-4e4e-8d16-5b1c7c9f0001
+```
+
 The response does not expose the sender's or recipient's current balance. Clients can retrieve their own wallet balance separately.
 
 ### Atomicity Requirements
@@ -311,19 +355,21 @@ The transfer must either complete fully or have no financial effect.
 
 ### Idempotency Behavior
 
-- Repeating the same logical request with the same key replays the original successful response.
-- Reusing a key with a different request payload returns `409 Conflict`.
+- Repeating the same logical request with the same key replays the original successful response. The replay returns the same `201 Created` status, the same `Location` header, and the same response body as the original request.
+- Reusing a key with a different request payload returns `409 Conflict` (`IDEMPOTENCY_KEY_REUSED`).
 - A successful retry must not create additional ledger entries or change either wallet balance again.
+- Concurrent requests using the same key must not create duplicate transfers.
 - A business rejection (`400`, `409`) does not permanently block the key; the same key and same payload may be retried later and re-validated.
 - An unexpected failure (`500`) leaves the attempt in `InProgress`; retry with the same key follows the bounded-wait policy.
 
 ### Error Responses
 
-- `400 Bad Request` — malformed JSON or invalid input.
+- `400 Bad Request` — malformed JSON or invalid input (`VALIDATION_ERROR`).
 - `401 Unauthorized` — authentication is missing or invalid.
 - `404 Not Found` — recipient does not exist (`RESOURCE_NOT_FOUND`). The response is indistinguishable from a nonexistent transfer, to avoid user enumeration (`CONST-022`).
-- `409 Conflict` — insufficient funds, self-transfer, recipient balance limit exceeded, or idempotency key reused with a different payload.
+- `409 Conflict` — insufficient funds (`INSUFFICIENT_FUNDS`), self-transfer (`SELF_TRANSFER`), recipient balance limit exceeded (`BALANCE_LIMIT_EXCEEDED`), or idempotency key reused with a different payload (`IDEMPOTENCY_KEY_REUSED`).
 - `500 Internal Server Error` — unexpected server failure.
+- `503 Service Unavailable` — the idempotency key is already being processed by a concurrent request (`IDEMPOTENCY_IN_PROGRESS`), or an uncertain commit outcome. The client retries with the same key.
 
 The API must not reveal information about unrelated users or their wallets.
 
