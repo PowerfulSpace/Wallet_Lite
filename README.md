@@ -1,4 +1,8 @@
-# Wallet_Lite# Wallet API
+# Wallet API
+
+**Status:** Draft v0.1  
+**Last Updated:** 2026-10-18  
+**Document Path:** `README.md`
 
 A backend-first educational project demonstrating reliable financial operations, transaction atomicity, concurrency control, idempotency, and clean software architecture.
 
@@ -126,8 +130,7 @@ wallet-api/
 │   ├── project/
 │   └── frontend/
 ├── src/
-├── tests/
-└── frontend/
+└── tests/
 ```
 
 This is a target structure. Directories and implementation files may not exist until the corresponding development work has been completed.
@@ -172,7 +175,17 @@ This is a target structure. Directories and implementation files may not exist u
 - `docs/project/open-questions.md` — unresolved questions.
 - `docs/project/roadmap.md` — development phases.
 - `docs/project/glossary.md` — shared terminology.
+- `docs/project/constants.md` — single source of truth for numeric and format constants.
+- `docs/project/known-issues.md` — accepted deviations deferred beyond the current phase.
 - `docs/adr/` — detailed Architecture Decision Records.
+- `docs/adr/ADR-000-template.md` — ADR template.
+- `docs/adr/ADR-001-architecture-style.md` — architecture style.
+- `docs/adr/ADR-002-money-and-precision.md` — money representation and precision.
+- `docs/adr/ADR-003-transaction-atomicity.md` — financial transaction atomicity.
+- `docs/adr/ADR-004-concurrency-control.md` — concurrency control.
+- `docs/adr/ADR-005-idempotency.md` — idempotency for financial operations.
+- `docs/adr/ADR-006-ledger-model.md` — wallet balance and append-only ledger.
+- `docs/adr/ADR-007-development-authentication.md` — development authentication.
 
 ### Operations
 
@@ -182,6 +195,8 @@ This is a target structure. Directories and implementation files may not exist u
 
 ### Frontend
 
+> Frontend is out of MVP scope. These documents are drafts for a future phase. See `AGENTS.md` §12.
+
 - `docs/frontend/overview.md` — frontend scope and goals.
 - `docs/frontend/architecture.md` — frontend boundaries and data flow.
 - `docs/frontend/api-integration.md` — API client behavior.
@@ -189,6 +204,10 @@ This is a target structure. Directories and implementation files may not exist u
 - `docs/frontend/accessibility.md` — accessibility requirements.
 - `docs/frontend/testing.md` — frontend test strategy.
 - `docs/frontend/development.md` — local frontend development.
+- `docs/frontend/forms-and-validation.md` — form behavior and validation rules.
+- `docs/frontend/routing.md` — routing and navigation model.
+- `docs/frontend/state-management.md` — state-management strategy.
+- `docs/frontend/ui-components.md` — component system.
 
 ## 9. Getting Started
 
@@ -225,16 +244,6 @@ See `docs/development/testing.md`.
 ## 11. Current Status and Open Decisions
 
 The project documentation establishes the proposed scope and design direction. The implementation must be developed and validated against these documents.
-
-Important decisions still requiring confirmation include:
-
-- Initial wallet balance and ledger initialization.
-- Final concurrency and transaction-isolation strategy.
-- Idempotency retention and recovery after uncertain commits.
-- Exact API response schemas and pagination behavior.
-- Production authentication and identity management.
-- Frontend technology and hosting.
-- Performance targets and operational recovery objectives.
 
 See `docs/project/open-questions.md` for the complete list and `docs/project/decisions.md` for the status of proposed decisions.
 

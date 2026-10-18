@@ -1,5 +1,9 @@
 # AGENTS.md
 
+**Status:** Draft v0.1  
+**Last Updated:** 2026-10-18  
+**Document Path:** `AGENTS.md`
+
 ## 1. Project Overview
 
 Wallet API is an educational backend-first project demonstrating production-oriented engineering practices for financial operations.
@@ -50,10 +54,10 @@ The following invariants MUST be preserved:
 
 - All monetary values represent USD.
 - C# monetary calculations use `decimal`, never `float` or `double`.
-- Persisted monetary amounts use SQL Server `decimal(19,2)`, subject to the final accepted data model.
+- Persisted monetary amounts use SQL Server `decimal(19,2)` per `ADR-002` and `docs/project/constants.md`.
 - Monetary input with more than two fractional decimal digits is rejected; it is not silently rounded.
 - Deposit and transfer amounts must be positive.
-- The maximum operation amount and wallet balance are USD 1,000,000.00.
+- The maximum operation amount and wallet balance are defined in `docs/project/constants.md` and enforced per `DR-005`, `DR-006`.
 - A wallet balance must never become negative.
 - A transfer must debit the sender and credit the recipient by equal amounts.
 - A failed transfer must not leave a partial financial result.
@@ -178,6 +182,8 @@ Follow `docs/development/testing.md` and the frontend testing guide when applica
 
 ## 12. Frontend
 
+Frontend is **out of MVP scope**. The `docs/frontend/` documents are drafts for a future phase. Do not implement frontend code, routing, state management, or UI as part of the MVP.
+
 If frontend code is implemented, follow the `docs/frontend/` documentation.
 
 The frontend MUST preserve monetary precision, use the documented API contract, handle authentication correctly, and distinguish confirmed results from uncertain financial operation outcomes.
@@ -198,7 +204,18 @@ Do not present an unresolved proposal as a finalized implementation requirement.
 
 Track unresolved questions in `docs/project/open-questions.md`.
 
-## 14. Development Workflow
+## 14. Numeric Format Convention
+
+Numeric constants appear in two forms, and the form depends on context:
+
+- **Prose** (sentences, explanations, requirement text): use thousands separators — `1,000,000.00`.
+- **Machine-readable** (JSON examples, SQL, code, table cells under a "Value" column, regex): no separators — `1000000.00`.
+
+Both forms must represent the same value. When a document needs a numeric constant that is listed in `docs/project/constants.md`, reference the constant by name instead of restating the value, unless the value is required for readability in that specific document.
+
+Do not introduce a third format (e.g. `1 000 000.00`, `1_000_000.00`).
+
+## 15. Development Workflow
 
 Before making changes:
 
@@ -218,7 +235,7 @@ After making changes:
 
 Never claim that tests, migrations, builds, or other commands succeeded unless they were actually executed and their results were observed.
 
-## 15. Scope Control
+## 16. Scope Control
 
 The MVP uses virtual USD balances only.
 
@@ -226,7 +243,7 @@ Do not introduce real payment processing, bank integration, multi-currency suppo
 
 Prefer the simplest implementation that satisfies documented requirements and preserves financial invariants.
 
-## 16. Handling Uncertainty
+## 17. Handling Uncertainty
 
 When a required decision is missing:
 

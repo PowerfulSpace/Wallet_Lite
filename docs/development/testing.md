@@ -118,7 +118,7 @@ The following properties must hold after every completed test scenario.
 ### Wallet Balance
 
 - Balance is never negative.
-- Balance never exceeds `1000000.00`.
+- Balance never exceeds `1,000,000.00`.
 - All persisted amounts use the agreed decimal precision.
 - Rejected operations do not change the wallet balance.
 

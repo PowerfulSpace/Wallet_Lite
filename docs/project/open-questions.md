@@ -105,6 +105,8 @@ Which monetary rules will be enforced through database constraints in addition t
 
 The design must consider positive operation amounts, supported precision, valid balance ranges, and non-negative wallet balances.
 
+**Resolution path:** Values for monetary precision and limits are registered in `docs/project/constants.md` as `CONST-001`–`CONST-004`. This OQ remains open only for the **enforcement mechanism** (database CHECK constraints vs application-only), not for the values themselves.
+
 ## 5. Financial Transactions and Concurrency
 
 ### OQ-006 — Transaction Isolation Level
@@ -144,6 +146,8 @@ The implementation must handle unique-constraint races and concurrent duplicates
 
 **Decision required:** Finalize the database uniqueness constraint, request fingerprinting, and transaction strategy.
 
+**Resolution path:** The bounded-wait and lease constants are registered as `CONST-011` and `CONST-012` in `docs/project/constants.md`. This OQ remains open for the **concurrency coordination mechanism** (unique constraint behavior, wait policy, recovery), not for the numeric parameters.
+
 ### OQ-009 — Failed Request Idempotency Policy
 
 **Priority:** P1  
@@ -156,6 +160,8 @@ Which failures, if any, will be persisted as replayable idempotency results?
 The baseline requirement is that failed attempts must not permanently prevent a valid retry merely because a key was previously used.
 
 The policy must distinguish validation failures, business-rule failures, transient infrastructure failures, and successful committed operations.
+
+**Resolution path:** Once decided, the policy must state which outcomes are persisted as replayable. See `docs/project/known-issues.md` for any deferred deviation.
 
 ### OQ-010 — Idempotency Retention
 
@@ -203,6 +209,8 @@ What default and maximum page sizes will the transaction history endpoint suppor
 
 The final values must balance usability, response size, and database efficiency.
 
+**Resolution path:** Final values will be registered as `CONST-007` and `CONST-008` in `docs/project/constants.md`.
+
 ### OQ-014 — Cursor Format
 
 **Priority:** P1  
@@ -213,6 +221,8 @@ The final values must balance usability, response size, and database efficiency.
 What format will be used for opaque pagination cursors?
 
 The ordering strategy must provide deterministic pagination using the agreed timestamp and unique identifier fields.
+
+**Resolution path:** Final format will be registered as `CONST-010` in `docs/project/constants.md`.
 
 ### OQ-015 — Recipient Enumeration Behavior
 
@@ -247,6 +257,8 @@ Which normalized request fields will be included in the idempotency fingerprint?
 
 The fingerprint must distinguish materially different logical operations while avoiding differences caused only by irrelevant serialization details.
 
+**Resolution path:** The idempotency key format and length will be registered as `CONST-005` and `CONST-006` in `docs/project/constants.md`.
+
 ### OQ-018 — Response Fields and Location Headers
 
 **Priority:** P2  
@@ -268,6 +280,8 @@ The contract should specify operation identifiers, relevant timestamps, resultin
 What database timestamp precision and API representation will be used?
 
 The decision must support deterministic ordering and stable cursor pagination when multiple operations share the same timestamp.
+
+**Resolution path:** Final precision will be registered as `CONST-009` in `docs/project/constants.md`.
 
 ### OQ-020 — HTTP Status for Business Conflicts
 

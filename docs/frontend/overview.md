@@ -7,6 +7,8 @@
 
 This document defines the proposed scope and responsibilities of a potential frontend application for the Wallet API project.
 
+**Scope note:** The frontend is **out of MVP scope**. This document and the other `docs/frontend/` documents are drafts for a future phase. They do not commit the project to implementing a frontend as part of the MVP.
+
 The frontend would provide a user interface for interacting with virtual wallets, making deposits, initiating transfers, and reviewing transaction history.
 
 The backend API remains the authoritative component responsible for authentication, authorization, validation, financial calculations, concurrency control, idempotency, and persistence.

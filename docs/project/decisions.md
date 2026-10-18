@@ -35,6 +35,7 @@ A decision SHOULD be marked `Accepted` only after the relevant trade-offs and ou
 | DEC-005 | Idempotency | Require `Idempotency-Key` for deposits and transfers | Proposed | `docs/adr/ADR-005-idempotency.md` |
 | DEC-006 | Ledger model | Maintain the current wallet balance alongside an append-only ledger | Proposed | `docs/adr/ADR-006-ledger-model.md` |
 | DEC-007 | Development authentication | Provide simplified development authentication that is unavailable in Production | Proposed | `docs/adr/ADR-007-development-authentication.md` |
+| DEC-008 | Project constants | Numeric and format constants tracked in a single file | Proposed | `docs/project/constants.md` |
 
 ## 4. Summary of Proposed Decisions
 
@@ -118,14 +119,7 @@ The decision register must be maintained alongside `docs/project/open-questions.
 
 An unresolved question may block acceptance of a proposed decision or require an explicit limitation in its ADR.
 
-Important questions to resolve before implementing financial write operations include:
-
-1. What is the initial wallet balance and how is it represented in the ledger?
-2. How are concurrent balance updates and deadlocks handled?
-3. How are concurrent requests with the same idempotency key coordinated?
-4. What is the exact behavior after an uncertain database commit?
-5. Which database constraints enforce monetary and ledger invariants?
-6. What is the final request and response contract for deposits and transfers?
+See `docs/project/open-questions.md §12 Current Blocking Decisions` for the authoritative list of blocking questions.
 
 The open-questions document remains the detailed list of unresolved items; this register should not duplicate it.
 

@@ -143,7 +143,7 @@ No debit, credit, transfer record, or ledger entry may be committed.
 
 ### Balance Limit Exceeded
 
-If a deposit or transfer would make a wallet balance exceed `1000000.00`, the operation must fail with `409 Conflict` and code `BALANCE_LIMIT_EXCEEDED`.
+If a deposit or transfer would make a wallet balance exceed `1,000,000.00`, the operation must fail with `409 Conflict` and code `BALANCE_LIMIT_EXCEEDED`.
 
 The operation must have no partial financial effect.
 

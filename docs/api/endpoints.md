@@ -182,8 +182,8 @@ The target wallet is determined from the authenticated user's identity.
 
 - `amount` must be a JSON string representing a positive decimal value.
 - The amount must have no more than two fractional decimal digits.
-- The amount must not exceed `1000000.00`.
-- The request must not cause the wallet balance to exceed `1000000.00`.
+- The amount must not exceed `1,000,000.00`.
+- The request must not cause the wallet balance to exceed `1,000,000.00`.
 - Invalid precision must be rejected; the server must not silently round.
 - The authenticated user must have an existing wallet.
 
@@ -262,10 +262,10 @@ The sender is always derived from the authenticated principal. A sender ID in th
 - `recipientUsername` must identify an existing user.
 - `amount` must be a positive decimal value represented as a JSON string.
 - The amount must have no more than two fractional decimal digits.
-- The amount must not exceed `1000000.00`.
+- The amount must not exceed `1,000,000.00`.
 - The sender and recipient must be different users.
 - The sender must have sufficient funds.
-- The recipient's resulting balance must not exceed `1000000.00`.
+- The recipient's resulting balance must not exceed `1,000,000.00`.
 - The server must not silently round amounts with excessive precision.
 
 ### Success Response — `201 Created`
