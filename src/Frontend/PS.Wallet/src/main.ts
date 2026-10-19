@@ -10,6 +10,8 @@ import { useDevUserStore } from '@/stores/devUser'
 import { useWalletStore } from '@/stores/wallet'
 import { useDepositStore } from '@/stores/deposit'
 import { useTransferStore } from '@/stores/transfer'
+import { useTransactionsStore } from '@/stores/transactions'
+import { useTransferDetailsStore } from '@/stores/transferDetails'
 import { setDevUserProvider } from '@/services/api/client'
 
 const app = createApp(App)
@@ -29,10 +31,14 @@ setDevUserProvider(() => devUserStore.currentUser)
 const walletStore = useWalletStore(pinia)
 const depositStore = useDepositStore(pinia)
 const transferStore = useTransferStore(pinia)
+const transactionsStore = useTransactionsStore(pinia)
+const transferDetailsStore = useTransferDetailsStore(pinia)
 devUserStore.$subscribe(() => {
   walletStore.reset()
   depositStore.reset()
   transferStore.reset()
+  transactionsStore.reset()
+  transferDetailsStore.reset()
   // Eager reload for the new user: the balance must reflect the current identity,
   // not remain empty until the page is revisited.
   void walletStore.fetchWallet()

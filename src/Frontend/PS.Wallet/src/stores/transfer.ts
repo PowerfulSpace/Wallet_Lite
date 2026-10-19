@@ -2,12 +2,10 @@ import { defineStore } from 'pinia'
 import { apiClient } from '@/services/api/client'
 import { ApiError, toApiError } from '@/services/api/errors'
 import { parseMoney } from '@/shared/money'
+import { validateUsername } from '@/shared/username'
 import type { CreateTransferRequest, Money, TransferResponseDto } from '@/services/api/types'
 
 export type TransferStatus = 'idle' | 'submitting' | 'succeeded' | 'failed' | 'outcomeUnknown'
-
-// Backend canonicalization: trim, then match ^[A-Za-z0-9_]{3,32}$ (case-insensitive lookup).
-const RECIPIENT_USERNAME_PATTERN = /^[A-Za-z0-9_]{3,32}$/
 
 export const useTransferStore = defineStore('transfer', {
   state: () => ({
@@ -34,17 +32,13 @@ export const useTransferStore = defineStore('transfer', {
         return
       }
 
-      const canonicalRecipient = recipientUsername.trim().toLowerCase()
-      if (!RECIPIENT_USERNAME_PATTERN.test(canonicalRecipient)) {
-        this.error = new ApiError(
-          0,
-          'CLIENT_VALIDATION',
-          undefined,
-          'Recipient username is invalid.',
-        )
+      const usernameResult = validateUsername(recipientUsername)
+      if (!usernameResult.ok) {
+        this.error = new ApiError(0, 'CLIENT_VALIDATION', undefined, usernameResult.reason)
         this.status = 'failed'
         return
       }
+      const canonicalRecipient = usernameResult.canonical
 
       const normalized = parsed.value
 

@@ -102,9 +102,8 @@ import { useTransferStore } from '@/stores/transfer'
 import { useWalletStore } from '@/stores/wallet'
 import { useDevUserStore } from '@/stores/devUser'
 import { formatMoney, parseMoney } from '@/shared/money'
+import { validateUsername } from '@/shared/username'
 import type { Money } from '@/services/api/types'
-
-const RECIPIENT_USERNAME_PATTERN = /^[A-Za-z0-9_]{3,32}$/
 
 const router = useRouter()
 const transferStore = useTransferStore()
@@ -146,14 +145,12 @@ const transferErrorMessage = computed(() => {
 })
 
 function validateRecipientField() {
-  const trimmed = recipientUsername.value.trim()
-  if (trimmed === '') {
+  if (recipientUsername.value.trim() === '') {
     recipientError.value = null
     return
   }
-  recipientError.value = RECIPIENT_USERNAME_PATTERN.test(trimmed)
-    ? null
-    : 'Recipient username is invalid.'
+  const result = validateUsername(recipientUsername.value)
+  recipientError.value = result.ok ? null : result.reason
 }
 
 function validateAmountField() {
@@ -182,15 +179,9 @@ async function submitTransfer(recipient: string, money: Money) {
 }
 
 async function onSubmit() {
-  const trimmed = recipientUsername.value.trim()
-  if (trimmed === '') {
-    recipientError.value = 'Recipient username is required.'
-  } else if (!RECIPIENT_USERNAME_PATTERN.test(trimmed)) {
-    recipientError.value = 'Recipient username is invalid.'
-  } else {
-    recipientError.value = null
-  }
-  const recipientValid = recipientError.value === null
+  const usernameResult = validateUsername(recipientUsername.value)
+  recipientError.value = usernameResult.ok ? null : usernameResult.reason
+  const recipientValid = usernameResult.ok
 
   const parsed = parseMoney(amount.value)
   amountError.value = parsed.ok ? null : parsed.reason
@@ -199,7 +190,7 @@ async function onSubmit() {
     return
   }
 
-  await submitTransfer(trimmed, parsed.value)
+  await submitTransfer(usernameResult.canonical, parsed.value)
 }
 
 function onRetry() {
